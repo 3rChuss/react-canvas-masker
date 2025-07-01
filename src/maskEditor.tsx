@@ -4,7 +4,7 @@ import { hexToRgb } from "./utils";
 
 export interface MaskEditorProps {
   src: string;
-  canvasRef?: React.MutableRefObject<HTMLCanvasElement>;
+  canvasRef?: React.RefObject<HTMLCanvasElement>;
   cursorSize?: number;
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
@@ -60,7 +60,9 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
   const maskOpacity = props.maskOpacity ?? MaskEditorDefaults.maskOpacity;
 
   const canvas = React.useRef<HTMLCanvasElement | null>(null);
-  const maskCanvas = React.useRef<HTMLCanvasElement | null>(null);
+  // Use the provided canvasRef or create a new one if not provided
+  const maskCanvas =
+    props.canvasRef || React.useRef<HTMLCanvasElement | null>(null);
   const cursorCanvas = React.useRef<HTMLCanvasElement | null>(null);
   const [context, setContext] =
     React.useState<CanvasRenderingContext2D | null>(null);
@@ -127,13 +129,6 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
 
     loadImage();
   }, [src, canvas.current?.width, canvas.current?.height, context, size]);
-
-  // Pass mask canvas up
-  React.useLayoutEffect(() => {
-    if (props.canvasRef) {
-      props.canvasRef.current = maskCanvas.current;
-    }
-  }, [maskCanvas]);
 
   React.useEffect(() => {
     const listener = (evt: MouseEvent) => {
