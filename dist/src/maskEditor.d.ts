@@ -2,7 +2,7 @@ import * as React from "react";
 import "./maskEditor.less";
 export interface MaskEditorProps {
     src: string;
-    canvasRef?: React.MutableRefObject<HTMLCanvasElement>;
+    canvasRef?: React.RefObject<HTMLCanvasElement>;
     cursorSize?: number;
     onCursorSizeChange?: (size: number) => void;
     maskOpacity?: number;
