@@ -39,7 +39,7 @@ BareEditorStory.storyName = "Default";
 
 export const CatEditorStory = Template.bind({});
 CatEditorStory.args = {
-  src: cat,
+  src: "https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg",
   maskColor: "#ffffff",
 };
 CatEditorStory.storyName = "Non square image";

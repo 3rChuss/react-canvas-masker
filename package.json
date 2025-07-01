@@ -1,6 +1,6 @@
 {
-  "name": "react-mask-editor",
-  "version": "0.0.2",
+  "name": "react-mask-editor-2",
+  "version": "1.0.0",
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "doches@gmail.com",
