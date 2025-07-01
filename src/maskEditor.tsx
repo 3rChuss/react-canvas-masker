@@ -2,9 +2,21 @@ import * as React from "react";
 import "./maskEditor.less";
 import { hexToRgb } from "./utils";
 
+export interface HistoryState {
+  imageData: ImageData;
+  timestamp: number;
+}
+
+// Extended canvas interface with undo and redo methods
+export interface MaskEditorCanvasRef extends HTMLCanvasElement {
+  undo: () => void;
+  redo: () => void;
+  clear: () => void;
+}
+
 export interface MaskEditorProps {
   src: string;
-  canvasRef?: React.RefObject<HTMLCanvasElement>;
+  canvasRef?: React.RefObject<MaskEditorCanvasRef>;
   cursorSize?: number;
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
@@ -26,6 +38,9 @@ export interface MaskEditorProps {
     | "saturation"
     | "color"
     | "luminosity";
+  onDrawingChange: (isDrawing: boolean) => void;
+  onUndoRequest?: () => void;
+  onRedoRequest?: () => void;
 }
 
 // Avoids potential CORS issues with canvas
@@ -74,6 +89,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
     x: 0,
     y: 0,
   });
+
+  const [isDrawing, setIsDrawing] = React.useState(false);
+  const [history, setHistory] = React.useState<HistoryState[]>([]);
+  const [historyIndex, setHistoryIndex] = React.useState(-1);
 
   React.useLayoutEffect(() => {
     if (canvas.current && !context) {
@@ -200,7 +219,102 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
     },
     [maskContext, size]
   );
+
   React.useEffect(() => replaceMaskColor(maskColor, false), [maskColor, size]);
+
+  const saveToHistory = React.useCallback(() => {
+    const imageData = maskContext?.getImageData(0, 0, size.x, size.y);
+
+    const newState: HistoryState = {
+      imageData,
+      timestamp: Date.now(),
+    };
+
+    setHistory((prev) => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(newState);
+      return newHistory.slice(-50);
+    });
+
+    setHistoryIndex((prev) => Math.min(prev + 1, 49));
+  }, [maskContext, size, props, historyIndex, history]);
+
+  console.log(history, historyIndex);
+
+  const handleMouseDown = React.useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      setIsDrawing(true);
+    },
+    [props, saveToHistory]
+  );
+
+  const handleMouseUp = React.useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement>) => {
+      e.preventDefault();
+      setIsDrawing(false);
+      saveToHistory();
+    },
+    [saveToHistory, props]
+  );
+
+  React.useEffect(() => {
+    props.onDrawingChange(isDrawing);
+  }, [isDrawing, props]);
+
+  const handleUndo = React.useCallback(() => {
+    restoreFromHistory(historyIndex - 1);
+
+    // Call the onUndoRequest prop if provided
+    if (props.onUndoRequest) {
+      props.onUndoRequest();
+    }
+  }, [history, historyIndex, maskContext, props.onUndoRequest]);
+
+  const handleRedo = React.useCallback(() => {
+    const nextState = history[historyIndex + 1];
+    if (nextState) {
+      restoreFromHistory(historyIndex + 1);
+    }
+    // Call the onRedoRequest prop if provided
+    if (props.onRedoRequest) {
+      props.onRedoRequest();
+    }
+  }, [history, historyIndex, maskContext, props.onRedoRequest]);
+
+  const handleClear = React.useCallback(() => {
+    maskContext?.clearRect(0, 0, size.x, size.y);
+    setHistory([]);
+    setHistoryIndex(0);
+  }, [maskContext, size]);
+
+  const restoreFromHistory = React.useCallback(
+    (index: number) => {
+      debugger;
+      if (index === -1) {
+        handleClear();
+        setHistoryIndex(-1);
+      }
+
+      if (history[index]) {
+        maskContext?.putImageData(history[index].imageData, 0, 0);
+        setHistoryIndex(index);
+      }
+    },
+    [history, maskContext]
+  );
+
+  // Expose undo and redo methods through ref
+  React.useImperativeHandle(
+    props.canvasRef,
+    () => ({
+      ...maskCanvas.current,
+      undo: handleUndo,
+      redo: handleRedo,
+      clear: handleClear,
+    }),
+    [maskCanvas.current, handleUndo, handleRedo]
+  );
 
   return (
     <div className="react-mask-editor-outer">
@@ -239,6 +353,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
           ref={cursorCanvas}
           width={size.x}
           height={size.y}
+          onMouseUp={handleMouseUp}
+          onMouseDown={handleMouseDown}
           style={{
             width: size.x,
             height: size.y,

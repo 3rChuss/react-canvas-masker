@@ -1,6 +1,6 @@
 import { ComponentMeta, ComponentStory } from "@storybook/react";
 import React from "react";
-import { MaskEditor, MaskEditorProps } from "./maskEditor";
+import { MaskEditor, MaskEditorProps, MaskEditorCanvasRef } from "./maskEditor";
 import { toMask } from "./utils";
 const icon = require("./icon.png");
 const cat = require("./cat.jpg");
@@ -12,8 +12,27 @@ export default {
 
 const Template: ComponentStory<typeof MaskEditor> = (args: MaskEditorProps) => {
   const [size, setSize] = React.useState(10);
-  const canvas = React.useRef<HTMLCanvasElement>();
+  const canvas = React.useRef<MaskEditorCanvasRef>(null);
   const [mask, setMask] = React.useState("");
+
+  const handleUndo = () => {
+    if (canvas.current && canvas.current.undo) {
+      canvas.current.undo();
+    }
+  };
+
+  const handleRedo = () => {
+    if (canvas.current && canvas.current.redo) {
+      canvas.current.redo();
+    }
+  };
+
+  const handleClear = () => {
+    if (canvas.current && canvas.current.clear) {
+      canvas.current.clear();
+    }
+  };
+
   return (
     <>
       <MaskEditor
@@ -21,10 +40,18 @@ const Template: ComponentStory<typeof MaskEditor> = (args: MaskEditorProps) => {
         cursorSize={size}
         onCursorSizeChange={setSize}
         canvasRef={canvas}
+        onDrawingChange={(isDrawing) => {
+          console.log("Drawing state changed:", isDrawing);
+        }}
+        onUndoRequest={() => console.log("Undo requested")}
+        onRedoRequest={() => console.log("Redo requested")}
       />
       <button onClick={() => setMask(toMask(canvas.current))}>
         Extract Mask
       </button>
+      <button onClick={handleUndo}>undo</button>
+      <button onClick={handleRedo}>redo</button>
+      <button onClick={handleClear}> clear</button>
       <img src={mask} style={{ border: "1px solid gray" }} />
     </>
   );
