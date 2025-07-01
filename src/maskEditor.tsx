@@ -9,30 +9,69 @@ export interface MaskEditorProps {
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
   maskColor?: string;
-  maskBlendMode?: "normal"|"multiply"|"screen"|"overlay"|"darken"|"lighten"|"color-dodge"|"color-burn"|"hard-light"|"soft-light"|"difference"|"exclusion"|"hue"|"saturation"|"color"|"luminosity"
+  maskBlendMode?:
+    | "normal"
+    | "multiply"
+    | "screen"
+    | "overlay"
+    | "darken"
+    | "lighten"
+    | "color-dodge"
+    | "color-burn"
+    | "hard-light"
+    | "soft-light"
+    | "difference"
+    | "exclusion"
+    | "hue"
+    | "saturation"
+    | "color"
+    | "luminosity";
 }
+
+// Avoids potential CORS issues with canvas
+const fetchImageAsBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
 
 export const MaskEditorDefaults = {
   cursorSize: 10,
-  maskOpacity: .75,
+  maskOpacity: 0.75,
   maskColor: "#23272d",
   maskBlendMode: "normal",
-}
+};
 
-export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) => {
+export const MaskEditor: React.FC<MaskEditorProps> = (
+  props: MaskEditorProps
+) => {
   const src = props.src;
   const cursorSize = props.cursorSize ?? MaskEditorDefaults.cursorSize;
   const maskColor = props.maskColor ?? MaskEditorDefaults.maskColor;
   const maskBlendMode = props.maskBlendMode ?? MaskEditorDefaults.maskBlendMode;
   const maskOpacity = props.maskOpacity ?? MaskEditorDefaults.maskOpacity;
 
-  const canvas = React.useRef<HTMLCanvasElement|null>(null);
-  const maskCanvas = React.useRef<HTMLCanvasElement|null>(null);
-  const cursorCanvas = React.useRef<HTMLCanvasElement|null>(null);
-  const [context, setContext] = React.useState<CanvasRenderingContext2D|null>(null);
-  const [maskContext, setMaskContext] = React.useState<CanvasRenderingContext2D|null>(null);
-  const [cursorContext, setCursorContext] = React.useState<CanvasRenderingContext2D|null>(null);
-  const [size, setSize] = React.useState<{x: number, y: number}>({x: 256, y: 256})
+  const canvas = React.useRef<HTMLCanvasElement | null>(null);
+  const maskCanvas = React.useRef<HTMLCanvasElement | null>(null);
+  const cursorCanvas = React.useRef<HTMLCanvasElement | null>(null);
+  const [context, setContext] =
+    React.useState<CanvasRenderingContext2D | null>(null);
+  const [maskContext, setMaskContext] =
+    React.useState<CanvasRenderingContext2D | null>(null);
+  const [cursorContext, setCursorContext] =
+    React.useState<CanvasRenderingContext2D | null>(null);
+  const [size, setSize] = React.useState<{ x: number; y: number }>({
+    x: 0,
+    y: 0,
+  });
 
   React.useLayoutEffect(() => {
     if (canvas.current && !context) {
@@ -50,7 +89,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) =>
       }
       setMaskContext(ctx);
     }
-  }, [maskCanvas]);
+  }, [maskCanvas, size]);
 
   React.useLayoutEffect(() => {
     if (cursorCanvas.current && !context) {
@@ -60,15 +99,34 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) =>
   }, [cursorCanvas]);
 
   React.useEffect(() => {
-    if (src && context) {
-      const img = new Image;
-      img.onload = evt => {
-        setSize({x: img.width, y: img.height});
-        context?.drawImage(img, 0, 0);
+    const loadImage = async () => {
+      if (src && context) {
+        try {
+          const base64Src = await fetchImageAsBase64(src);
+
+          const img = new Image();
+          img.onload = () => {
+            if (size?.x !== img.width && size?.y !== img.height) {
+              setSize({ x: img.width, y: img.height });
+            }
+
+            const canvasEl = canvas.current;
+            if (canvasEl) {
+              canvasEl.width = img.width;
+              canvasEl.height = img.height;
+            }
+
+            context?.drawImage(img, 0, 0, img.width, img.height);
+          };
+          img.src = base64Src;
+        } catch (error) {
+          console.error("Error loading image:", error);
+        }
       }
-      img.src = src;
-    }
-  }, [src, context]);
+    };
+
+    loadImage();
+  }, [src, canvas.current?.width, canvas.current?.height, context, size]);
 
   // Pass mask canvas up
   React.useLayoutEffect(() => {
@@ -91,14 +149,17 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) =>
       }
       if (maskContext && evt.buttons > 0) {
         maskContext.beginPath();
-        maskContext.fillStyle = (evt.buttons > 1 || evt.shiftKey) ? "#ffffff" : maskColor;
+        maskContext.fillStyle =
+          evt.buttons > 1 || evt.shiftKey ? "#ffffff" : maskColor;
         maskContext.arc(evt.offsetX, evt.offsetY, cursorSize, 0, 360);
         maskContext.fill();
       }
-    }
+    };
     const scrollListener = (evt: WheelEvent) => {
       if (cursorContext) {
-        props.onCursorSizeChange(Math.max(0, cursorSize + (evt.deltaY > 0 ? 1 : -1)));
+        props.onCursorSizeChange(
+          Math.max(0, cursorSize + (evt.deltaY > 0 ? 1 : -1))
+        );
 
         cursorContext.clearRect(0, 0, size.x, size.y);
 
@@ -112,7 +173,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) =>
         evt.stopPropagation();
         evt.preventDefault();
       }
-    }
+    };
 
     cursorCanvas.current?.addEventListener("mousemove", listener);
     if (props.onCursorSizeChange) {
@@ -123,65 +184,73 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props: MaskEditorProps) =>
       if (props.onCursorSizeChange) {
         cursorCanvas.current?.removeEventListener("wheel", scrollListener);
       }
-    }
+    };
   }, [cursorContext, maskContext, cursorCanvas, cursorSize, maskColor, size]);
 
-  const replaceMaskColor = React.useCallback((hexColor: string, invert: boolean) => {
-    const imageData = maskContext?.getImageData(0, 0, size.x, size.y);
-    const color = hexToRgb(hexColor);
-    if (imageData) {
-      for (var i = 0; i < imageData?.data.length; i += 4) {
-        const pixelColor = ((imageData.data[i] === 255) != invert) ? [255, 255, 255] : color;
-        imageData.data[i] = pixelColor[0];
-        imageData.data[i + 1] = pixelColor[1];
-        imageData.data[i + 2] = pixelColor[2];
-        imageData.data[i + 3] = imageData.data[i + 3];
+  const replaceMaskColor = React.useCallback(
+    (hexColor: string, invert: boolean) => {
+      const imageData = maskContext?.getImageData(0, 0, size.x, size.y);
+      const color = hexToRgb(hexColor);
+      if (imageData) {
+        for (var i = 0; i < imageData?.data.length; i += 4) {
+          const pixelColor =
+            (imageData.data[i] === 255) != invert ? [255, 255, 255] : color;
+          imageData.data[i] = pixelColor[0];
+          imageData.data[i + 1] = pixelColor[1];
+          imageData.data[i + 2] = pixelColor[2];
+          imageData.data[i + 3] = imageData.data[i + 3];
+        }
+        maskContext?.putImageData(imageData, 0, 0);
       }
-      maskContext?.putImageData(imageData, 0, 0);
-    }
-  }, [maskContext]);
-  React.useEffect(() => replaceMaskColor(maskColor, false), [maskColor]);
+    },
+    [maskContext, size]
+  );
+  React.useEffect(() => replaceMaskColor(maskColor, false), [maskColor, size]);
 
-  return <div className="react-mask-editor-outer">
-    <div
-      className="react-mask-editor-inner"
-      style={{
-        width: size.x,
-        height: size.y,
-      }}
-    >
-      <canvas
-        ref={canvas}
+  return (
+    <div className="react-mask-editor-outer">
+      <div
+        className="react-mask-editor-inner"
         style={{
           width: size.x,
           height: size.y,
         }}
-        width={size.x}
-        height={size.y}
-        className="react-mask-editor-base-canvas"
-      />
-      <canvas
-        ref={maskCanvas}
-        width={size.x}
-        height={size.y}
-        style={{
-          width: size.x,
-          height: size.y,
-          opacity: maskOpacity,
-          mixBlendMode: maskBlendMode as any,
-        }}
-        className="react-mask-editor-mask-canvas"
-      />
-      <canvas
-        ref={cursorCanvas}
-        width={size.x}
-        height={size.y}
-        style={{
-          width: size.x,
-          height: size.y,
-        }}
-        className="react-mask-editor-cursor-canvas"
-      />
+        key="test"
+      >
+        <canvas
+          ref={canvas}
+          key="no-rerender"
+          style={{
+            width: size.x,
+            height: size.y,
+          }}
+          width={size.x}
+          height={size.y}
+          className="react-mask-editor-base-canvas"
+        />
+        <canvas
+          ref={maskCanvas}
+          width={size.x}
+          height={size.y}
+          style={{
+            width: size.x,
+            height: size.y,
+            opacity: maskOpacity,
+            mixBlendMode: maskBlendMode as any,
+          }}
+          className="react-mask-editor-mask-canvas"
+        />
+        <canvas
+          ref={cursorCanvas}
+          width={size.x}
+          height={size.y}
+          style={{
+            width: size.x,
+            height: size.y,
+          }}
+          className="react-mask-editor-cursor-canvas"
+        />
+      </div>
     </div>
-  </div>
-}
+  );
+};
