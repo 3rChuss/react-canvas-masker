@@ -262,6 +262,27 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
     props.onDrawingChange(isDrawing);
   }, [isDrawing, props]);
 
+  const restoreFromHistory = React.useCallback(
+    (index: number) => {
+      if (index < -1 || index >= history.length) {
+        return;
+      }
+
+      if (index === -1) {
+        maskContext?.clearRect(0, 0, size.x, size.y);
+
+        setHistoryIndex(-1);
+        return;
+      }
+
+      if (history[index]) {
+        maskContext?.putImageData(history[index].imageData, 0, 0);
+        setHistoryIndex(index);
+      }
+    },
+    [history, maskContext, size]
+  );
+
   const handleUndo = React.useCallback(() => {
     restoreFromHistory(historyIndex - 1);
 
@@ -280,29 +301,19 @@ export const MaskEditor: React.FC<MaskEditorProps> = (
     if (props.onRedoRequest) {
       props.onRedoRequest();
     }
-  }, [history, historyIndex, maskContext, props.onRedoRequest]);
+  }, [
+    history,
+    historyIndex,
+    maskContext,
+    props.onRedoRequest,
+    restoreFromHistory,
+  ]);
 
   const handleClear = React.useCallback(() => {
     maskContext?.clearRect(0, 0, size.x, size.y);
     setHistory([]);
     setHistoryIndex(0);
   }, [maskContext, size]);
-
-  const restoreFromHistory = React.useCallback(
-    (index: number) => {
-      debugger;
-      if (index === -1) {
-        handleClear();
-        setHistoryIndex(-1);
-      }
-
-      if (history[index]) {
-        maskContext?.putImageData(history[index].imageData, 0, 0);
-        setHistoryIndex(index);
-      }
-    },
-    [history, maskContext]
-  );
 
   // Expose undo and redo methods through ref
   React.useImperativeHandle(
