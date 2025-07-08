@@ -9,6 +9,16 @@
     "declaration": true,
     "declarationDir": "./dist",
     "allowSyntheticDefaultImports": true,
-    "lib": ["es2021", "ES2015.Promise", "ES5", "DOM"]
-  }
+    "lib": [
+      "es2021",
+      "ES2015.Promise",
+      "ES5",
+      "DOM"
+    ]
+  },
+  "exclude": [
+    "example",
+    "test",
+    "node_modules"
+  ]
 }

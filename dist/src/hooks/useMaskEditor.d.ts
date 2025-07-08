@@ -1,0 +1,51 @@
+import * as React from "react";
+export interface HistoryState {
+    imageData: ImageData;
+    timestamp: number;
+}
+export interface UseMaskEditorProps {
+    src: string;
+    cursorSize?: number;
+    onCursorSizeChange?: (size: number) => void;
+    maskOpacity?: number;
+    maskColor?: string;
+    maskBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion" | "hue" | "saturation" | "color" | "luminosity";
+    onDrawingChange: (isDrawing: boolean) => void;
+    onUndoRequest?: () => void;
+    onRedoRequest?: () => void;
+}
+export interface MaskEditorCanvasRef {
+    maskCanvas: HTMLCanvasElement | null;
+    undo: () => void;
+    redo: () => void;
+    clear: () => void;
+}
+export interface UseMaskEditorReturn {
+    canvasRef: React.RefObject<HTMLCanvasElement>;
+    maskCanvasRef: React.RefObject<HTMLCanvasElement>;
+    cursorCanvasRef: React.RefObject<HTMLCanvasElement>;
+    size: {
+        x: number;
+        y: number;
+    };
+    isDrawing: boolean;
+    handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    undo: () => void;
+    redo: () => void;
+    clear: () => void;
+    cursorSize: number;
+    setCursorSize: React.Dispatch<React.SetStateAction<number>>;
+    maskColor: string;
+    maskOpacity: number;
+    maskBlendMode: string;
+    history: HistoryState[];
+    historyIndex: number;
+}
+export declare const MaskEditorDefaults: {
+    cursorSize: number;
+    maskOpacity: number;
+    maskColor: string;
+    maskBlendMode: string;
+};
+export declare function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn;

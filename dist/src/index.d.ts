@@ -1,2 +1,4 @@
-export * from "./maskEditor";
-export * from "./utils";
+export * from "./hooks/useMaskEditor";
+export * from "./components/MaskEditorProvider";
+export { MaskEditor } from "./components/MaskEditor";
+export { toMask } from "./utils";
