@@ -13,6 +13,11 @@ export interface UseMaskEditorProps {
     onDrawingChange: (isDrawing: boolean) => void;
     onUndoRequest?: () => void;
     onRedoRequest?: () => void;
+    /**
+     * Called with the current mask (as a dataURL) when the mask changes.
+     * Debounced while drawing, called immediately on mouse up.
+     */
+    onMaskChange?: (mask: string) => void;
 }
 export interface MaskEditorCanvasRef {
     maskCanvas: HTMLCanvasElement | null;

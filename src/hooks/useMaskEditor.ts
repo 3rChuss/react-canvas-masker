@@ -1,5 +1,6 @@
 import * as React from "react";
-import { hexToRgb } from "../utils";
+import { hexToRgb, toMask } from "../utils";
+import debounce from "lodash.debounce";
 
 export interface HistoryState {
   imageData: ImageData;
@@ -32,6 +33,11 @@ export interface UseMaskEditorProps {
   onDrawingChange: (isDrawing: boolean) => void;
   onUndoRequest?: () => void;
   onRedoRequest?: () => void;
+  /**
+   * Called with the current mask (as a dataURL) when the mask changes.
+   * Debounced while drawing, called immediately on mouse up.
+   */
+  onMaskChange?: (mask: string) => void;
 }
 
 export interface MaskEditorCanvasRef {
@@ -93,7 +99,15 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     onDrawingChange,
     onUndoRequest,
     onRedoRequest,
+    onMaskChange,
   } = props;
+  // Debounced mask change callback
+  const debouncedMaskChange = React.useMemo(() => {
+    if (!onMaskChange) return undefined;
+    return debounce((mask: string) => {
+      onMaskChange(mask);
+    }, 300);
+  }, [onMaskChange]);
 
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
@@ -307,34 +321,78 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
       setIsDrawing(false);
-      setTimeout(() => saveToHistory(), 0);
+      setTimeout(() => {
+        saveToHistory();
+        // Call onMaskChange immediately on mouse up
+        if (onMaskChange && maskCanvasRef.current) {
+          onMaskChange(toMask(maskCanvasRef.current));
+        }
+      }, 0);
     },
-    [saveToHistory]
+    [saveToHistory, onMaskChange, maskCanvasRef]
   );
 
   React.useEffect(() => {
     onDrawingChange(isDrawing);
   }, [isDrawing, onDrawingChange]);
 
+  // Mask change effect (debounced while drawing)
+  React.useEffect(() => {
+    if (!onMaskChange || !maskCanvasRef.current) return;
+    if (isDrawing && debouncedMaskChange) {
+      debouncedMaskChange(toMask(maskCanvasRef.current));
+    }
+    // Cleanup debounce on unmount
+    return () => {
+      if (debouncedMaskChange) debouncedMaskChange.cancel();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isDrawing, maskCanvasRef, onMaskChange]);
+
   // Undo/Redo/Clear
   const undo = React.useCallback(() => {
     restoreFromHistory(historyIndex - 1);
     onUndoRequest?.();
-  }, [restoreFromHistory, historyIndex, onUndoRequest]);
+    // Call onMaskChange after undo
+    if (onMaskChange && maskCanvasRef.current) {
+      onMaskChange(toMask(maskCanvasRef.current));
+    }
+  }, [
+    restoreFromHistory,
+    historyIndex,
+    onUndoRequest,
+    onMaskChange,
+    maskCanvasRef,
+  ]);
 
   const redo = React.useCallback(() => {
     if (history[historyIndex + 1]) {
       restoreFromHistory(historyIndex + 1);
       onRedoRequest?.();
+      // Call onMaskChange after redo
+      if (onMaskChange && maskCanvasRef.current) {
+        onMaskChange(toMask(maskCanvasRef.current));
+      }
     }
-  }, [restoreFromHistory, history, historyIndex, onRedoRequest]);
+  }, [
+    restoreFromHistory,
+    history,
+    historyIndex,
+    onRedoRequest,
+    onMaskChange,
+    maskCanvasRef,
+  ]);
 
   const clear = React.useCallback(() => {
     if (!maskContext || size.x === 0 || size.y === 0) return;
     maskContext.clearRect(0, 0, size.x, size.y);
     setHistory([]);
     setHistoryIndex(0);
-  }, [maskContext, size]);
+    // Call onMaskChange after clear
+    if (onMaskChange && maskCanvasRef.current) {
+      onMaskChange(toMask(maskCanvasRef.current));
+    }
+  }, [maskContext, size, onMaskChange, maskCanvasRef]);
 
   return {
     canvasRef,
