@@ -1,7 +1,5 @@
 import * as React from "react";
-import { hexToRgb, toMask } from "../utils";
-import * as debounce from "lodash.debounce";
-const realDebounce = debounce.default || debounce;
+import { hexToRgb, toMask, simpleDebounce } from "../utils";
 
 export interface HistoryState {
   imageData: ImageData;
@@ -106,7 +104,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   // Debounced mask change callback
   const debouncedMaskChange = React.useMemo(() => {
     if (!onMaskChange) return undefined;
-    return realDebounce((mask: string) => {
+    return simpleDebounce((mask: string) => {
       onMaskChange(mask);
     }, 300);
   }, [onMaskChange]);

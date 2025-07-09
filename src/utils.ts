@@ -3,13 +3,14 @@ export const toMask = (canvas: HTMLCanvasElement) => {
   const size = {
     x: canvas.width,
     y: canvas.height,
-  }
-  console.log(size)
+  };
+  console.log(size);
   const imageData = ctx?.getImageData(0, 0, size.x, size.y);
   const origData = Uint8ClampedArray.from(imageData.data);
   if (imageData) {
     for (var i = 0; i < imageData?.data.length; i += 4) {
-      const pixelColor = (imageData.data[i] === 255) ? [255, 255, 255] : [0, 0, 0];
+      const pixelColor =
+        imageData.data[i] === 255 ? [255, 255, 255] : [0, 0, 0];
       imageData.data[i] = pixelColor[0];
       imageData.data[i + 1] = pixelColor[1];
       imageData.data[i + 2] = pixelColor[2];
@@ -25,9 +26,25 @@ export const toMask = (canvas: HTMLCanvasElement) => {
   ctx.putImageData(imageData, 0, 0);
 
   return dataUrl;
-}
+};
 
 export const hexToRgb = (color: string) => {
   var parts = color.replace("#", "").match(/.{1,2}/g);
-  return parts.map(part => parseInt(part, 16));
+  return parts.map((part) => parseInt(part, 16));
+};
+
+export function simpleDebounce<T extends (...args: any[]) => void>(
+  fn: T,
+  wait: number
+) {
+  let timeout: ReturnType<typeof setTimeout> | null = null;
+  const debounced = (...args: Parameters<T>) => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => fn(...args), wait);
+  };
+  debounced.cancel = () => {
+    if (timeout) clearTimeout(timeout);
+    timeout = null;
+  };
+  return debounced as T & { cancel: () => void };
 }
