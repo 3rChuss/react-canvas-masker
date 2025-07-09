@@ -1,8 +1,8 @@
-import { create } from "@storybook/theming"
+import { create } from "storybook/theming";
 
 export default create({
   base: "light",
-  brandTitle: "La Volière",
-  brandUrl: "https://voliere.dev",
-  brandImage: "https://voliere.dev/voliere_logo.svg",
-})
+  brandTitle: "Mask Editor",
+  brandUrl: "https://codennecting.com",
+  brandImage: "https://codennecting.com/_next/image?url=%2Flogo.png&w=96&q=75",
+});
