@@ -1,4 +1,4 @@
-# React Mask Editor (Enhanced Fork)
+# React Mask Editor (Enhanced Fork) (react-masker)
 
 > A modern, flexible React component and hook for image mask editing. This is an improved fork of the original [`react-mask-editor`](https://www.npmjs.com/package/react-mask-editor) with a robust hook-based architecture, better undo/redo, and a more flexible API.
 
@@ -17,7 +17,7 @@
 ## Installation
 
 ```bash
-npm install react-mask-editor
+npm install react-masker
 # or
 
 ```
@@ -28,7 +28,7 @@ npm install react-mask-editor
 
 ```tsx
 import React from "react";
-import { MaskEditor, toMask } from "react-mask-editor";
+import { MaskEditor, toMask } from "react-masker";
 
 const MyComponent = () => {
   const canvas = React.useRef(null);
@@ -70,7 +70,7 @@ You can customize the editor using these optional props:
 Use the full mask editor logic in your own component:
 
 ```tsx
-import { useMaskEditor } from "react-mask-editor";
+import { useMaskEditor } from "react-masker";
 
 const CustomMaskEditor = () => {
   const {
@@ -113,7 +113,7 @@ const CustomMaskEditor = () => {
 Share editor state across multiple components:
 
 ```tsx
-import { MaskEditorProvider, useMaskEditorContext } from "react-mask-editor";
+import { MaskEditorProvider, useMaskEditorContext } from "react-masker";
 
 const MaskEditorCanvas = () => {
   const {
@@ -202,7 +202,7 @@ You can edit `example/src/App.tsx` to test the component, hook, and context API 
 
 ## About this fork
 
-- This package is a modern, actively maintained fork of [`react-mask-editor`](https://www.npmjs.com/package/react-mask-editor).
+- This package is a modern, actively maintained fork of [`react-masker`](https://www.npmjs.com/package/react-masker).
 - All business logic is now in a reusable hook (`useMaskEditor`).
 - Undo/redo and mask logic are robust and extensible.
 - The API is fully documented and ready for npm publishing.

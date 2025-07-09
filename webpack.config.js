@@ -10,7 +10,7 @@ module.exports = {
     filename: "index.js",
     library: {
       type: "umd",
-      name: "@la-voliere/react-mask-editor",
+      name: "@3rchuss/react-masker",
     },
   },
   resolve: {
