@@ -191,6 +191,10 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
+  React.useEffect(() => {
+    setCursorSize(initialCursorSize);
+  }, [initialCursorSize]);
+
   // Cursor and mask drawing
   React.useEffect(() => {
     const listener = (evt: MouseEvent) => {
@@ -222,8 +226,9 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         onCursorSizeChange?.(newSize);
         cursorContext.clearRect(0, 0, size.x, size.y);
         cursorContext.beginPath();
-        cursorContext.fillStyle = `${maskColor}88`;
+        cursorContext.fillStyle = maskColor;
         cursorContext.strokeStyle = maskColor;
+        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
         cursorContext.arc(evt.offsetX, evt.offsetY, newSize, 0, 360);
         cursorContext.fill();
         cursorContext.stroke();
