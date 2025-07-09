@@ -16,7 +16,7 @@ function App() {
       <MaskEditor
         key={"mask-editor"}
         src={cat}
-        maskColor="#ffffff"
+        maskColor="#13cf4cff"
         cursorSize={size}
         onCursorSizeChange={setSize}
         canvasRef={canvas}

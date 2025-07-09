@@ -197,8 +197,9 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       if (cursorContext) {
         cursorContext.clearRect(0, 0, size.x, size.y);
         cursorContext.beginPath();
-        cursorContext.fillStyle = `${maskColor}88`;
+        cursorContext.fillStyle = maskColor;
         cursorContext.strokeStyle = maskColor;
+        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
         cursorContext.arc(evt.offsetX, evt.offsetY, currentCursorSize, 0, 360);
         cursorContext.fill();
         cursorContext.stroke();
