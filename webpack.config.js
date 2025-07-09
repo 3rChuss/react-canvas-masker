@@ -10,7 +10,7 @@ module.exports = {
     filename: "index.js",
     library: {
       type: "umd",
-      name: "@3rchuss/react-masker",
+      name: "@3rchuss/react-canvas-masker",
     },
   },
   resolve: {

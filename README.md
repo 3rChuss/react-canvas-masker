@@ -17,7 +17,7 @@
 ## Installation
 
 ```bash
-npm install react-masker
+npm install react-canvas-masker
 # or
 
 ```
@@ -30,7 +30,7 @@ npm install react-masker
 
 ```tsx
 import React from "react";
-import { MaskEditor, toMask } from "react-masker";
+import { MaskEditor, toMask } from "react-canvas-masker";
 
 const MyComponent = () => {
   const canvas = React.useRef(null);
@@ -92,7 +92,7 @@ The `MaskEditor` component exposes the following methods and properties via its 
 Use the full mask editor logic in your own component:
 
 ```tsx
-import { useMaskEditor } from "react-masker";
+import { useMaskEditor } from "react-canvas-masker";
 
 const CustomMaskEditor = () => {
   const {
@@ -135,7 +135,7 @@ const CustomMaskEditor = () => {
 Share editor state across multiple components:
 
 ```tsx
-import { MaskEditorProvider, useMaskEditorContext } from "react-masker";
+import { MaskEditorProvider, useMaskEditorContext } from "react-canvas-masker";
 
 const MaskEditorCanvas = () => {
   const {
