@@ -4,7 +4,6 @@ export const toMask = (canvas: HTMLCanvasElement) => {
     x: canvas.width,
     y: canvas.height,
   };
-  console.log(size);
   const imageData = ctx?.getImageData(0, 0, size.x, size.y);
   const origData = Uint8ClampedArray.from(imageData.data);
   if (imageData) {
