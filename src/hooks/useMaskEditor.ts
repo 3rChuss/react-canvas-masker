@@ -400,6 +400,39 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     }
   }, [maskContext, size, onMaskChange, maskCanvasRef]);
 
+  // Keyboard shortcuts for undo/redo (Ctrl+Z / Ctrl+Y)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Avoid interfering with input fields
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (
+        tag === "INPUT" ||
+        tag === "TEXTAREA" ||
+        (e.target as HTMLElement)?.isContentEditable
+      )
+        return;
+      if (
+        (e.ctrlKey || e.metaKey) &&
+        !e.shiftKey &&
+        e.key.toLowerCase() === "z"
+      ) {
+        e.preventDefault();
+        undo();
+      } else if (
+        (e.ctrlKey || e.metaKey) &&
+        (e.key.toLowerCase() === "y" ||
+          (e.shiftKey && e.key.toLowerCase() === "z"))
+      ) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [undo, redo]);
+
   return {
     canvasRef,
     maskCanvasRef,
