@@ -1,0 +1,31 @@
+.react-mask-editor-outer {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+.react-mask-editor-outer .react-mask-editor-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-start;
+  position: relative;
+  overflow: auto;
+  flex: 1 1 auto;
+}
+.react-mask-editor-outer .react-mask-editor-inner .all-canvases {
+  position: relative;
+}
+.react-mask-editor-outer canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.react-mask-editor-outer .mask-canvas {
+  z-index: 10;
+}
+.react-mask-editor-outer .cursor-canvas {
+  z-index: 20;
+  background-color: transparent;
+}
+
