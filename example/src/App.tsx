@@ -11,6 +11,8 @@ function App() {
   const [size, setSize] = React.useState(10);
   const [color, setColor] = React.useState("#13cf4c");
 
+  console.log("Mask:", mask);
+
   return (
     <>
       <div style={{ padding: 32 }}>
@@ -48,6 +50,7 @@ function App() {
           onDrawingChange={console.log}
           onUndoRequest={() => console.log("Undo requested")}
           onRedoRequest={() => console.log("Redo requested")}
+          onMaskChange={setMask}
         />
         <div style={{ marginTop: 16 }}>
           <button
