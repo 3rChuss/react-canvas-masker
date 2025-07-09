@@ -1,7 +1,8 @@
-import { ComponentMeta } from "@storybook/react";
-import React from "react";
-declare const _default: ComponentMeta<React.FC<import("./components/MaskEditor").MaskEditorProps>>;
-export default _default;
-export declare const BareEditorStory: any;
-export declare const CatEditorStory: any;
-export declare const HookUsageStory: React.FC;
+import type { Meta, StoryObj } from "@storybook/react";
+import { MaskEditor } from "./components/MaskEditor";
+declare const meta: Meta<typeof MaskEditor>;
+export default meta;
+type Story = StoryObj<typeof MaskEditor>;
+export declare const BareEditorStory: Story;
+export declare const CatEditorStory: Story;
+export declare const HookUsageStory: Story;
