@@ -1,11 +1,9 @@
-module.exports = {
+/** @type { import('@storybook/react-vite').StorybookConfig } */
+const config = {
   stories: ["../src/*.stories.tsx"],
   addons: [
     "@storybook/addon-links",
-    "@storybook/addon-essentials",
     "@storybook/addon-docs",
-    "@storybook/addon-controls",
-    "@storybook/addon-interactions",
     {
       name: "storybook-preset-less",
       options: {
@@ -17,16 +15,11 @@ module.exports = {
       },
     },
   ],
-  framework: "@storybook/react",
-  core: {
-    builder: "webpack5",
+  framework: {
+    name: "@storybook/react-vite",
+    options: {},
   },
-  webpackFinal: async (config) => {
-    return {
-      ...config,
-      module: {
-        ...config.module,
-      },
-    }
-  },
-}
+  // Removed deprecated core.builder for Storybook 9 compatibility
+  // If you need custom webpack config, migrate to Vite or use framework options
+};
+export default config;
