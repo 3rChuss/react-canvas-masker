@@ -1,4 +1,4 @@
-import "./maskEditor.less";
+import "../dist/style.css";
 export * from "./hooks/useMaskEditor";
 export * from "./components/MaskEditorProvider";
 export { MaskEditor } from "./components/MaskEditor";
