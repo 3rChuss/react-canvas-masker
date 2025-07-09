@@ -10,9 +10,9 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/3rChuss/react-masker.git"
+    "url": "https://github.com/3rChuss/react-masker.git"
   },
-  "homepage": "https://docs.voliere.dev/react-masker",
+  "homepage": "https://github.com/3rChuss/react-masker#readme",
   "keywords": [
     "canvas",
     "react",
