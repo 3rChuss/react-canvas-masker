@@ -1,6 +1,6 @@
-# React Mask Editor (Enhanced Fork) (react-masker)
+# React Mask Editor
 
-> A modern, flexible React component and hook for image mask editing. This is an improved fork of the original [`react-mask-editor`](https://www.npmjs.com/package/react-mask-editor) with a robust hook-based architecture, better undo/redo, and a more flexible API.
+> A modern, flexible React component and hook for image mask editing. This is an enhanced fork of the original [`react-mask-editor`](https://www.npmjs.com/package/react-mask-editor) with a robust hook-based architecture, improved undo/redo, and a more flexible API.
 
 ---
 
@@ -24,7 +24,9 @@ npm install react-masker
 
 ---
 
-## Usage (Component)
+## Usage
+
+### Basic Example
 
 ```tsx
 import React from "react";
@@ -49,17 +51,37 @@ const MyComponent = () => {
 };
 ```
 
-### Customization
+---
 
-You can customize the editor using these optional props:
+## Props
 
-| Prop                 | Description                                                                                         | Default     |
-| -------------------- | --------------------------------------------------------------------------------------------------- | ----------- |
-| `cursorSize`         | Radius (in pixels) of the brush for editing the mask                                                | `10`        |
-| `onCursorSizeChange` | Callback when the user changes the brush size via mousewheel                                        | `undefined` |
-| `maskOpacity`        | CSS opacity, decimal between 0 – 1                                                                  | `0.4`       |
-| `maskColor`          | Hex color (with or without leading '#')                                                             | `#ffffff`   |
-| `maskBlendMode`      | [CSS blending mode](https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode) for the mask layer | `normal`    |
+| Prop                 | Type                                                                                                                                                                                                                           | Required | Default   | Description                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- | --------- | ---------------------------------------------------------------------------------------------------- |
+| `src`                | `string`                                                                                                                                                                                                                       | Yes      | —         | Source URL of the image to edit.                                                                     |
+| `cursorSize`         | `number`                                                                                                                                                                                                                       | No       | `10`      | Radius (in pixels) of the brush for editing the mask.                                                |
+| `onCursorSizeChange` | `(size: number) => void`                                                                                                                                                                                                       | No       | —         | Callback when the user changes the brush size via mouse wheel.                                       |
+| `maskOpacity`        | `number`                                                                                                                                                                                                                       | No       | `0.4`     | CSS opacity, decimal between 0–1.                                                                    |
+| `maskColor`          | `string`                                                                                                                                                                                                                       | No       | `#ffffff` | Hex color (with or without leading '#') for the mask.                                                |
+| `maskBlendMode`      | `"normal" \| "multiply" \| "screen" \| "overlay" \| "darken" \| "lighten" \| "color-dodge" \| "color-burn" \| "hard-light" \| "soft-light" \| "difference" \| "exclusion" \| "hue" \| "saturation" \| "color" \| "luminosity"` | No       | `normal`  | [CSS blending mode](https://developer.mozilla.org/en-US/docs/Web/CSS/blend-mode) for the mask layer. |
+| `onDrawingChange`    | `(isDrawing: boolean) => void`                                                                                                                                                                                                 | Yes      | —         | Called when the user starts or stops drawing.                                                        |
+| `onUndoRequest`      | `() => void`                                                                                                                                                                                                                   | No       | —         | Called when the user requests an undo action.                                                        |
+| `onRedoRequest`      | `() => void`                                                                                                                                                                                                                   | No       | —         | Called when the user requests a redo action.                                                         |
+| `onMaskChange`       | `(mask: string) => void`                                                                                                                                                                                                       | No       | —         | Called with the current mask (as a dataURL) when the mask changes. Debounced while drawing.          |
+
+---
+
+## Events & Methods
+
+### Ref API (`MaskEditorCanvasRef`)
+
+The `MaskEditor` component exposes the following methods and properties via its `ref`:
+
+| Name         | Type                        | Description                       |
+| ------------ | --------------------------- | --------------------------------- |
+| `maskCanvas` | `HTMLCanvasElement \| null` | The mask canvas element.          |
+| `undo()`     | `() => void`                | Undo the last mask change.        |
+| `redo()`     | `() => void`                | Redo the last undone mask change. |
+| `clear()`    | `() => void`                | Clear the mask.                   |
 
 ---
 
@@ -161,55 +183,19 @@ const App = () => (
 );
 ```
 
-### 3. Ref API
-
-The `MaskEditor` component exposes `undo`, `redo`, `clear`, and `maskCanvas` via its ref:
-
-```tsx
-const canvas = React.useRef<MaskEditorCanvasRef>(null);
-<MaskEditor src="..." canvasRef={canvas} ... />
-<button onClick={() => canvas.current?.undo?.()}>Undo</button>
-<button onClick={() => {
-  if (canvas.current?.maskCanvas) {
-    console.log(toMask(canvas.current.maskCanvas));
-  }
-}}>Get Mask</button>
-```
-
 ---
 
-## Example App
+## Notes
 
-This repo includes a full example app for local development and testing.
-
-### Run the Example
-
-1. Install all dependencies in the root:
-   ```bash
-   npm install
-   ```
-2. Go to the `example` directory:
-   ```bash
-   cd example
-   npm install
-   npm run dev
-   ```
-3. Open the local URL shown by Vite (e.g. http://localhost:5173) in your browser.
-
-You can edit `example/src/App.tsx` to test the component, hook, and context API directly.
-
----
-
-## About this fork
-
-- This package is a modern, actively maintained fork of [`react-masker`](https://www.npmjs.com/package/react-masker).
-- All business logic is now in a reusable hook (`useMaskEditor`).
-- Undo/redo and mask logic are robust and extensible.
-- The API is fully documented and ready for npm publishing.
-- Example app included for local development and testing.
+- All mask operations are performed on a separate canvas for performance.
+- The mask is returned as a PNG dataURL (black/white).
+- The editor supports up to 50 undo/redo steps.
+- The package is a modern, actively maintained fork of [`react-mask-editor`](https://www.npmjs.com/package/react-mask-editor).
 
 ---
 
 ## License
 
 MIT
+
+## About this fork

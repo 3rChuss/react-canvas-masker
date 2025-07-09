@@ -101,6 +101,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     onRedoRequest,
     onMaskChange,
   } = props;
+
   // Debounced mask change callback
   const debouncedMaskChange = React.useMemo(() => {
     if (!onMaskChange) return undefined;
@@ -387,7 +388,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     if (!maskContext || size.x === 0 || size.y === 0) return;
     maskContext.clearRect(0, 0, size.x, size.y);
     setHistory([]);
-    setHistoryIndex(0);
+    setHistoryIndex(-1);
     // Call onMaskChange after clear
     if (onMaskChange && maskCanvasRef.current) {
       onMaskChange(toMask(maskCanvasRef.current));

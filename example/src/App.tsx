@@ -2,6 +2,7 @@ import * as React from "react";
 import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
 import './App.css'
 import cat from './assets/images/cat.jpg'
+import MaskEditorProviderExample from "./MaskEditorProviderExample";
 
 function App() {
   const canvas = React.useRef<MaskEditorCanvasRef>(null) as React.RefObject<MaskEditorCanvasRef>;
@@ -9,6 +10,7 @@ function App() {
   const [size, setSize] = React.useState(10);
 
   return (
+    <>
     <div style={{ padding: 32 }}>
       <h2>Test MaskEditor (standalone usage)</h2>
       <MaskEditor
@@ -44,6 +46,10 @@ function App() {
         />
       </div>
     </div>
+     <div style={{ padding: 32 }}>
+      <MaskEditorProviderExample />
+     </div>
+    </>
   );
 };
 
