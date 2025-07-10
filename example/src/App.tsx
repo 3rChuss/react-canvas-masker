@@ -1,6 +1,6 @@
 import * as React from "react";
-// import { MaskEditor, toMask, type MaskEditorCanvasRef} from 'react-canvas-masker'
- import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
+import { MaskEditor, toMask, type MaskEditorCanvasRef} from 'react-canvas-masker'
+//  import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
 import 'react-canvas-masker/dist/style.css'
 import './App.css'
 import MaskEditorProviderExample from "./MaskEditorProviderExample";
@@ -50,6 +50,8 @@ function App() {
           onUndoRequest={() => console.log("Undo requested")}
           onRedoRequest={() => console.log("Redo requested")}
           onMaskChange={setMask}
+          maxHeight={500}
+          maxWidth={500}
         />
         <div style={{ marginTop: 16 }}>
           <button
