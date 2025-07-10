@@ -8,6 +8,11 @@ export interface HistoryState {
 
 export interface UseMaskEditorProps {
   src: string;
+  /**
+   * Cross-origin attribute for the image, if needed (default: undefined)
+   */
+  crossOrigin?: string;
+
   cursorSize?: number;
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
@@ -79,39 +84,6 @@ export const MaskEditorDefaults = {
   maskOpacity: 0.4,
   maskColor: "#ffffff",
   maskBlendMode: "normal",
-};
-
-// Tries to load image directly, if fails, fetches and converts to base64
-const fetchImageAsBase64 = async (url: string): Promise<string> => {
-  // Try to load image directly to check if it's accessible
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const img = new window.Image();
-      img.onload = () => resolve();
-      img.onerror = () => reject(new Error("Image load error"));
-      img.crossOrigin = "anonymous";
-      img.src = url;
-    });
-    // If load succeeds, return the original url
-    return url;
-  } catch (directError) {
-    // If direct load fails, try to fetch and convert to base64
-    try {
-      const response = await fetch(url);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch image: ${response.statusText}`);
-      }
-      const blob = await response.blob();
-      return await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-    } catch (fetchError) {
-      throw new Error(`Image could not be loaded: ${fetchError}`);
-    }
-  }
 };
 
 export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
@@ -186,8 +158,11 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     const loadImage = async () => {
       if (!src) return;
       try {
-        const base64Src = await fetchImageAsBase64(src);
         const img = new window.Image();
+        if (props.crossOrigin) {
+          img.crossOrigin = props.crossOrigin;
+        }
+
         img.onload = () => {
           let targetWidth = img.width;
           let targetHeight = img.height;
@@ -218,7 +193,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
         };
-        img.src = base64Src;
+        img.src = src;
       } catch (error) {
         console.error("Error loading image:", error);
       }

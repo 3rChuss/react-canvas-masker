@@ -78,6 +78,7 @@ const MyComponent = () => {
 | `onDrawingChange`    | `(isDrawing: boolean) => void` | Yes        | —         | Called when the user starts or stops drawing.                                                |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `maxWidth`           | `number`                       | No         | `1240`    | Maximum width for loaded images. Images larger than this will be scaled down automatically.  |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `maxHeight`          | `number`                       | No         | `1240`    | Maximum height for loaded images. Images larger than this will be scaled down automatically. |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
+| `crossOrigin`        | `string`                       | No         | —         | Value for the `crossOrigin` attribute on the underlying `<img>`. Useful for CORS images.     |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `onUndoRequest`      | `() => void`                   | No         | —         | Called when the user requests an undo action.                                                |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `onRedoRequest`      | `() => void`                   | No         | —         | Called when the user requests a redo action.                                                 |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `onMaskChange`       | `(mask: string) => void`       | No         | —         | Called with the current mask (as a dataURL) when the mask changes. Debounced while drawing.  |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
@@ -122,6 +123,7 @@ const CustomMaskEditor = () => {
     maskColor: "#00ff00",
     maxWidth: 1024, // Optional: limit image width
     maxHeight: 1024, // Optional: limit image height
+    crossOrigin: "anonymous", // Optional: set crossOrigin for CORS
     onDrawingChange: (drawing) => console.log(drawing),
   });
 
@@ -191,6 +193,7 @@ const App = () => (
     src="https://placekitten.com/256/256"
     maxWidth={1024} // Optional: limit image width
     maxHeight={1024} // Optional: limit image height
+    crossOrigin="anonymous" // Optional: set crossOrigin for CORS
     onDrawingChange={() => {}}
   >
     <MaskEditorCanvas />

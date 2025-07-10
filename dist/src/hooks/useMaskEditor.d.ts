@@ -5,6 +5,10 @@ export interface HistoryState {
 }
 export interface UseMaskEditorProps {
     src: string;
+    /**
+     * Cross-origin attribute for the image, if needed (default: undefined)
+     */
+    crossOrigin?: string;
     cursorSize?: number;
     onCursorSizeChange?: (size: number) => void;
     maskOpacity?: number;
