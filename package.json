@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-masker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "3rchuss",
@@ -20,7 +20,10 @@
     "reactjs",
     "drawing",
     "mask",
-    "editor"
+    "editor",
+    "image",
+    "manipulation",
+    "react-mask-editor"
   ],
   "peerDependencies": {
     "react": ">=18.0.0 <20.0.0"

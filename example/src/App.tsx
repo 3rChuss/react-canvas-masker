@@ -1,7 +1,6 @@
 import * as React from "react";
 import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
 import './App.css'
-import cat from './assets/images/cat.jpg'
 import MaskEditorProviderExample from "./MaskEditorProviderExample";
 
 
@@ -42,9 +41,11 @@ function App() {
         </div>
         <MaskEditor
           key={"mask-editor"}
-          src={cat}
+          src='https://images.unsplash.com/photo-1746311372686-e164b0bcb333?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
           maskColor={color}
           cursorSize={size}
+          maxHeight={1024}
+          maxWidth={1024}
           onCursorSizeChange={setSize}
           canvasRef={canvas}
           onDrawingChange={console.log}
@@ -74,7 +75,7 @@ function App() {
           />
         </div>
       </div>
-      <div style={{ padding: 32 }}>
+      <div style={{ padding: 32, }}>
         <MaskEditorProviderExample />
       </div>
     </>

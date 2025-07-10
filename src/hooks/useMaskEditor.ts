@@ -29,6 +29,14 @@ export interface UseMaskEditorProps {
     | "saturation"
     | "color"
     | "luminosity";
+  /**
+   * Maximum width for loaded images (default: 1240)
+   */
+  maxWidth?: number;
+  /**
+   * Maximum height for loaded images (default: 1240)
+   */
+  maxHeight?: number;
   onDrawingChange: (isDrawing: boolean) => void;
   onUndoRequest?: () => void;
   onRedoRequest?: () => void;
@@ -73,18 +81,37 @@ export const MaskEditorDefaults = {
   maskBlendMode: "normal",
 };
 
+// Tries to load image directly, if fails, fetches and converts to base64
 const fetchImageAsBase64 = async (url: string): Promise<string> => {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  // Try to load image directly to check if it's accessible
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const img = new window.Image();
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Image load error"));
+      img.crossOrigin = "anonymous";
+      img.src = url;
+    });
+    // If load succeeds, return the original url
+    return url;
+  } catch (directError) {
+    // If direct load fails, try to fetch and convert to base64
+    try {
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      const blob = await response.blob();
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+    } catch (fetchError) {
+      throw new Error(`Image could not be loaded: ${fetchError}`);
+    }
   }
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
 };
 
 export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
@@ -94,6 +121,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     maskColor = MaskEditorDefaults.maskColor,
     maskBlendMode = MaskEditorDefaults.maskBlendMode,
     maskOpacity = MaskEditorDefaults.maskOpacity,
+    maxWidth = 1240,
+    maxHeight = 1240,
     onCursorSizeChange,
     onDrawingChange,
     onUndoRequest,
@@ -160,25 +189,33 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         const base64Src = await fetchImageAsBase64(src);
         const img = new window.Image();
         img.onload = () => {
-          // Primero, actualizamos el tamaño del estado y de los canvas
-          setSize({ x: img.width, y: img.height });
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          // Redimensionar si es más grande que el máximo
+          if (img.width > maxWidth || img.height > maxHeight) {
+            const widthRatio = maxWidth / img.width;
+            const heightRatio = maxHeight / img.height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            targetWidth = Math.round(img.width * ratio);
+            targetHeight = Math.round(img.height * ratio);
+          }
+          setSize({ x: targetWidth, y: targetHeight });
           if (canvasRef.current) {
-            canvasRef.current.width = img.width;
-            canvasRef.current.height = img.height;
+            canvasRef.current.width = targetWidth;
+            canvasRef.current.height = targetHeight;
           }
           if (maskCanvasRef.current) {
-            maskCanvasRef.current.width = img.width;
-            maskCanvasRef.current.height = img.height;
+            maskCanvasRef.current.width = targetWidth;
+            maskCanvasRef.current.height = targetHeight;
           }
           if (cursorCanvasRef.current) {
-            cursorCanvasRef.current.width = img.width;
-            cursorCanvasRef.current.height = img.height;
+            cursorCanvasRef.current.width = targetWidth;
+            cursorCanvasRef.current.height = targetHeight;
           }
-          // Esperamos un tick para asegurar que el contexto se actualizó
           setTimeout(() => {
             const ctx = canvasRef.current?.getContext("2d");
-            ctx?.clearRect(0, 0, img.width, img.height);
-            ctx?.drawImage(img, 0, 0, img.width, img.height);
+            ctx?.clearRect(0, 0, targetWidth, targetHeight);
+            ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
         };
         img.src = base64Src;
@@ -188,7 +225,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     };
     loadImage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src]);
+  }, [src, maxWidth, maxHeight]);
 
   React.useEffect(() => {
     setCursorSize(initialCursorSize);
