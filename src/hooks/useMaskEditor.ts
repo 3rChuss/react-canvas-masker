@@ -13,6 +13,14 @@ export interface UseMaskEditorProps {
    * Useful if the image is hosted on a different domain and requires CORS.
    */
   crossOrigin?: string;
+  /**
+   * Maximum width for loaded images (default: 1240)
+   */
+  maxWidth?: number;
+  /**
+   * Maximum height for loaded images (default: 1240)
+   */
+  maxHeight?: number;
   cursorSize?: number;
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
@@ -95,6 +103,9 @@ const fetchImageAsBase64 = async (url: string): Promise<string> => {
 export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const {
     src,
+    crossOrigin,
+    maxWidth = 1240,
+    maxHeight = 1240,
     cursorSize: initialCursorSize = MaskEditorDefaults.cursorSize,
     maskColor = MaskEditorDefaults.maskColor,
     maskBlendMode = MaskEditorDefaults.maskBlendMode,
@@ -164,28 +175,37 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       try {
         const base64Src = await fetchImageAsBase64(src);
         const img = new window.Image();
-        if (props.crossOrigin) {
-          img.crossOrigin = props.crossOrigin;
+        if (crossOrigin) {
+          img.crossOrigin = crossOrigin;
         }
         img.onload = () => {
-          // Primero, actualizamos el tamaño del estado y de los canvas
-          setSize({ x: img.width, y: img.height });
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          // Redimensionar si es más grande que el máximo
+          if (img.width > maxWidth || img.height > maxHeight) {
+            const widthRatio = maxWidth / img.width;
+            const heightRatio = maxHeight / img.height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            targetWidth = Math.round(img.width * ratio);
+            targetHeight = Math.round(img.height * ratio);
+          }
+          setSize({ x: targetWidth, y: targetHeight });
           if (canvasRef.current) {
-            canvasRef.current.width = img.width;
-            canvasRef.current.height = img.height;
+            canvasRef.current.width = targetWidth;
+            canvasRef.current.height = targetHeight;
           }
           if (maskCanvasRef.current) {
-            maskCanvasRef.current.width = img.width;
-            maskCanvasRef.current.height = img.height;
+            maskCanvasRef.current.width = targetWidth;
+            maskCanvasRef.current.height = targetHeight;
           }
           if (cursorCanvasRef.current) {
-            cursorCanvasRef.current.width = img.width;
-            cursorCanvasRef.current.height = img.height;
+            cursorCanvasRef.current.width = targetWidth;
+            cursorCanvasRef.current.height = targetHeight;
           }
           setTimeout(() => {
             const ctx = canvasRef.current?.getContext("2d");
-            ctx?.clearRect(0, 0, img.width, img.height);
-            ctx?.drawImage(img, 0, 0, img.width, img.height);
+            ctx?.clearRect(0, 0, targetWidth, targetHeight);
+            ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
         };
         img.src = base64Src;
@@ -194,35 +214,46 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         console.error("Trying to load image from src directly");
 
         const img = new window.Image();
-        if (props.crossOrigin) {
-          img.crossOrigin = props.crossOrigin;
+        if (crossOrigin) {
+          img.crossOrigin = crossOrigin;
         }
         img.onload = () => {
-          setSize({ x: img.width, y: img.height });
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          if (img.width > maxWidth || img.height > maxHeight) {
+            const widthRatio = maxWidth / img.width;
+            const heightRatio = maxHeight / img.height;
+            const ratio = Math.min(widthRatio, heightRatio);
+            targetWidth = Math.round(img.width * ratio);
+            targetHeight = Math.round(img.height * ratio);
+          }
+          setSize({ x: targetWidth, y: targetHeight });
           if (canvasRef.current) {
-            canvasRef.current.width = img.width;
-            canvasRef.current.height = img.height;
+            canvasRef.current.width = targetWidth;
+            canvasRef.current.height = targetHeight;
           }
           if (maskCanvasRef.current) {
-            maskCanvasRef.current.width = img.width;
-            maskCanvasRef.current.height = img.height;
+            maskCanvasRef.current.width = targetWidth;
+            maskCanvasRef.current.height = targetHeight;
           }
           if (cursorCanvasRef.current) {
-            cursorCanvasRef.current.width = img.width;
-            cursorCanvasRef.current.height = img.height;
+            cursorCanvasRef.current.width = targetWidth;
+            cursorCanvasRef.current.height = targetHeight;
           }
           setTimeout(() => {
             const ctx = canvasRef.current?.getContext("2d");
-            ctx?.clearRect(0, 0, img.width, img.height);
-            ctx?.drawImage(img, 0, 0, img.width, img.height);
+            ctx?.clearRect(0, 0, targetWidth, targetHeight);
+            ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
         };
-        img.src = src;
+        setTimeout(() => {
+          img.src = src;
+        }, 0);
       }
     };
     loadImage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src]);
+  }, [src, crossOrigin, maxWidth, maxHeight]);
 
   React.useEffect(() => {
     setCursorSize(initialCursorSize);

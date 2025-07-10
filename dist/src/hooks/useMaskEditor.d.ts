@@ -10,6 +10,14 @@ export interface UseMaskEditorProps {
      * Useful if the image is hosted on a different domain and requires CORS.
      */
     crossOrigin?: string;
+    /**
+     * Maximum width for loaded images (default: 1240)
+     */
+    maxWidth?: number;
+    /**
+     * Maximum height for loaded images (default: 1240)
+     */
+    maxHeight?: number;
     cursorSize?: number;
     onCursorSizeChange?: (size: number) => void;
     maskOpacity?: number;
