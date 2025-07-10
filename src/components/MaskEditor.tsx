@@ -15,16 +15,17 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
 
   const {
     canvasRef,
-    maskCanvasRef,
+    clear,
     cursorCanvasRef,
-    size,
     handleMouseDown,
     handleMouseUp,
-    undo,
-    redo,
-    clear,
-    maskOpacity,
+    key,
     maskBlendMode,
+    maskCanvasRef,
+    maskOpacity,
+    redo,
+    size,
+    undo,
   } = useMaskEditor(hookProps);
 
   // Expose API via ref if provided
@@ -49,6 +50,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
         }}
       >
         <canvas
+          key={key}
           ref={canvasRef}
           style={{
             width: size.x,

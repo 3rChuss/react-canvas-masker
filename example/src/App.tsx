@@ -9,8 +9,8 @@ import MaskEditorProviderExample from "./MaskEditorProviderExample";
 function App() {
   const canvas = React.useRef<MaskEditorCanvasRef>(null) as React.RefObject<MaskEditorCanvasRef>;
   const [mask, setMask] = React.useState("");
-  const [size, setSize] = React.useState(10);
-  const [color, setColor] = React.useState('#dfddddff');
+  const [size, setSize] = React.useState(20);
+  const [color, setColor] = React.useState('#c3c3c3');
 
   return (
     <>
@@ -46,12 +46,12 @@ function App() {
           cursorSize={size}
           onCursorSizeChange={setSize}
           canvasRef={canvas}
+          maskOpacity={0.5}
           onDrawingChange={console.log}
           onUndoRequest={() => console.log("Undo requested")}
           onRedoRequest={() => console.log("Redo requested")}
           onMaskChange={setMask}
-          maxHeight={500}
-          maxWidth={500}
+
         />
         <div style={{ marginTop: 16 }}>
           <button

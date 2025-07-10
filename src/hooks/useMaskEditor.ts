@@ -61,22 +61,23 @@ export interface MaskEditorCanvasRef {
 
 export interface UseMaskEditorReturn {
   canvasRef: React.RefObject<HTMLCanvasElement>;
-  maskCanvasRef: React.RefObject<HTMLCanvasElement>;
+  clear: () => void;
   cursorCanvasRef: React.RefObject<HTMLCanvasElement>;
-  size: { x: number; y: number };
-  isDrawing: boolean;
+  cursorSize: number;
   handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
-  undo: () => void;
-  redo: () => void;
-  clear: () => void;
-  cursorSize: number;
-  setCursorSize: React.Dispatch<React.SetStateAction<number>>;
-  maskColor: string;
-  maskOpacity: number;
-  maskBlendMode: string;
   history: HistoryState[];
   historyIndex: number;
+  isDrawing: boolean;
+  key: number;
+  maskBlendMode: string;
+  maskCanvasRef: React.RefObject<HTMLCanvasElement>;
+  maskColor: string;
+  maskOpacity: number;
+  redo: () => void;
+  setCursorSize: React.Dispatch<React.SetStateAction<number>>;
+  size: { x: number; y: number };
+  undo: () => void;
 }
 
 export const MaskEditorDefaults = {
@@ -143,6 +144,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const [history, setHistory] = React.useState<HistoryState[]>([]);
   const [historyIndex, setHistoryIndex] = React.useState(-1);
   const [currentCursorSize, setCursorSize] = React.useState(initialCursorSize);
+  const [key, setKey] = React.useState(0);
 
   // Contexts
   React.useLayoutEffect(() => {
@@ -208,7 +210,11 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
         };
-        img.src = base64Src;
+        setTimeout(() => {
+          img.src = base64Src;
+        }, 0);
+        // Force re-render to update canvas
+        setKey((prev) => prev + 1); // Force re-render to update canvas
       } catch (error) {
         console.error("Error loading image:", error);
         console.error("Trying to load image from src directly");
@@ -249,6 +255,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         setTimeout(() => {
           img.src = src;
         }, 0);
+        setKey((prev) => prev + 1); // Force re-render to update canvas
       }
     };
     loadImage();
@@ -505,6 +512,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     cursorCanvasRef,
     size,
     isDrawing,
+    key,
     handleMouseDown,
     handleMouseUp,
     undo,

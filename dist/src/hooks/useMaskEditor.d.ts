@@ -40,25 +40,26 @@ export interface MaskEditorCanvasRef {
 }
 export interface UseMaskEditorReturn {
     canvasRef: React.RefObject<HTMLCanvasElement>;
-    maskCanvasRef: React.RefObject<HTMLCanvasElement>;
+    clear: () => void;
     cursorCanvasRef: React.RefObject<HTMLCanvasElement>;
+    cursorSize: number;
+    handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+    history: HistoryState[];
+    historyIndex: number;
+    isDrawing: boolean;
+    key: number;
+    maskBlendMode: string;
+    maskCanvasRef: React.RefObject<HTMLCanvasElement>;
+    maskColor: string;
+    maskOpacity: number;
+    redo: () => void;
+    setCursorSize: React.Dispatch<React.SetStateAction<number>>;
     size: {
         x: number;
         y: number;
     };
-    isDrawing: boolean;
-    handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
-    handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
     undo: () => void;
-    redo: () => void;
-    clear: () => void;
-    cursorSize: number;
-    setCursorSize: React.Dispatch<React.SetStateAction<number>>;
-    maskColor: string;
-    maskOpacity: number;
-    maskBlendMode: string;
-    history: HistoryState[];
-    historyIndex: number;
 }
 export declare const MaskEditorDefaults: {
     cursorSize: number;

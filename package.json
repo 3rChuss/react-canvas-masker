@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-masker",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "3rchuss",
