@@ -1,5 +1,7 @@
 import * as React from "react";
-import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
+// import { MaskEditor, toMask, type MaskEditorCanvasRef} from 'react-canvas-masker'
+ import { MaskEditor, toMask, type MaskEditorCanvasRef} from '../../src/index'
+import 'react-canvas-masker/dist/style.css'
 import './App.css'
 import MaskEditorProviderExample from "./MaskEditorProviderExample";
 
@@ -8,9 +10,7 @@ function App() {
   const canvas = React.useRef<MaskEditorCanvasRef>(null) as React.RefObject<MaskEditorCanvasRef>;
   const [mask, setMask] = React.useState("");
   const [size, setSize] = React.useState(10);
-  const [color, setColor] = React.useState("#13cf4c");
-
-  console.log("Mask:", mask);
+  const [color, setColor] = React.useState('#dfddddff');
 
   return (
     <>
@@ -41,12 +41,9 @@ function App() {
         </div>
         <MaskEditor
           key={"mask-editor"}
-          src='https://images.unsplash.com/photo-1746311372686-e164b0bcb333?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
+          src="https://firebasestorage.googleapis.com/v0/b/aliz-otp-genai-poc-sandbox-assets/o/b0d9a293-3ce4-4b76-ba27-b945826e881b%2F1751276672390%2Fsample_1.png?alt=media&token=43eb8d0f-5db7-4f83-a1c9-c0f5d20487b8"
           maskColor={color}
           cursorSize={size}
-          maxHeight={ 600 }
-          maxWidth={ 600 }
-          crossOrigin="anonymous"
           onCursorSizeChange={setSize}
           canvasRef={canvas}
           onDrawingChange={console.log}

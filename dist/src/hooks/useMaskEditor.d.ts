@@ -6,7 +6,8 @@ export interface HistoryState {
 export interface UseMaskEditorProps {
     src: string;
     /**
-     * Cross-origin attribute for the image, if needed (default: undefined)
+     * Cross-origin attribute for the image.
+     * Useful if the image is hosted on a different domain and requires CORS.
      */
     crossOrigin?: string;
     cursorSize?: number;
@@ -14,14 +15,6 @@ export interface UseMaskEditorProps {
     maskOpacity?: number;
     maskColor?: string;
     maskBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion" | "hue" | "saturation" | "color" | "luminosity";
-    /**
-     * Maximum width for loaded images (default: 1240)
-     */
-    maxWidth?: number;
-    /**
-     * Maximum height for loaded images (default: 1240)
-     */
-    maxHeight?: number;
     onDrawingChange: (isDrawing: boolean) => void;
     onUndoRequest?: () => void;
     onRedoRequest?: () => void;

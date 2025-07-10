@@ -9,10 +9,10 @@ export interface HistoryState {
 export interface UseMaskEditorProps {
   src: string;
   /**
-   * Cross-origin attribute for the image, if needed (default: undefined)
+   * Cross-origin attribute for the image.
+   * Useful if the image is hosted on a different domain and requires CORS.
    */
   crossOrigin?: string;
-
   cursorSize?: number;
   onCursorSizeChange?: (size: number) => void;
   maskOpacity?: number;
@@ -34,14 +34,6 @@ export interface UseMaskEditorProps {
     | "saturation"
     | "color"
     | "luminosity";
-  /**
-   * Maximum width for loaded images (default: 1240)
-   */
-  maxWidth?: number;
-  /**
-   * Maximum height for loaded images (default: 1240)
-   */
-  maxHeight?: number;
   onDrawingChange: (isDrawing: boolean) => void;
   onUndoRequest?: () => void;
   onRedoRequest?: () => void;
@@ -86,6 +78,20 @@ export const MaskEditorDefaults = {
   maskBlendMode: "normal",
 };
 
+const fetchImageAsBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`);
+  }
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const {
     src,
@@ -93,8 +99,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     maskColor = MaskEditorDefaults.maskColor,
     maskBlendMode = MaskEditorDefaults.maskBlendMode,
     maskOpacity = MaskEditorDefaults.maskOpacity,
-    maxWidth = 1240,
-    maxHeight = 1240,
     onCursorSizeChange,
     onDrawingChange,
     onUndoRequest,
@@ -158,49 +162,67 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     const loadImage = async () => {
       if (!src) return;
       try {
+        const base64Src = await fetchImageAsBase64(src);
         const img = new window.Image();
         if (props.crossOrigin) {
           img.crossOrigin = props.crossOrigin;
         }
-
         img.onload = () => {
-          let targetWidth = img.width;
-          let targetHeight = img.height;
-          // Redimensionar si es más grande que el máximo
-          if (img.width > maxWidth || img.height > maxHeight) {
-            const widthRatio = maxWidth / img.width;
-            const heightRatio = maxHeight / img.height;
-            const ratio = Math.min(widthRatio, heightRatio);
-            targetWidth = Math.round(img.width * ratio);
-            targetHeight = Math.round(img.height * ratio);
-          }
-          setSize({ x: targetWidth, y: targetHeight });
+          // Primero, actualizamos el tamaño del estado y de los canvas
+          setSize({ x: img.width, y: img.height });
           if (canvasRef.current) {
-            canvasRef.current.width = targetWidth;
-            canvasRef.current.height = targetHeight;
+            canvasRef.current.width = img.width;
+            canvasRef.current.height = img.height;
           }
           if (maskCanvasRef.current) {
-            maskCanvasRef.current.width = targetWidth;
-            maskCanvasRef.current.height = targetHeight;
+            maskCanvasRef.current.width = img.width;
+            maskCanvasRef.current.height = img.height;
           }
           if (cursorCanvasRef.current) {
-            cursorCanvasRef.current.width = targetWidth;
-            cursorCanvasRef.current.height = targetHeight;
+            cursorCanvasRef.current.width = img.width;
+            cursorCanvasRef.current.height = img.height;
           }
           setTimeout(() => {
             const ctx = canvasRef.current?.getContext("2d");
-            ctx?.clearRect(0, 0, targetWidth, targetHeight);
-            ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
+            ctx?.clearRect(0, 0, img.width, img.height);
+            ctx?.drawImage(img, 0, 0, img.width, img.height);
+          }, 0);
+        };
+        img.src = base64Src;
+      } catch (error) {
+        console.error("Error loading image:", error);
+        console.error("Trying to load image from src directly");
+
+        const img = new window.Image();
+        if (props.crossOrigin) {
+          img.crossOrigin = props.crossOrigin;
+        }
+        img.onload = () => {
+          setSize({ x: img.width, y: img.height });
+          if (canvasRef.current) {
+            canvasRef.current.width = img.width;
+            canvasRef.current.height = img.height;
+          }
+          if (maskCanvasRef.current) {
+            maskCanvasRef.current.width = img.width;
+            maskCanvasRef.current.height = img.height;
+          }
+          if (cursorCanvasRef.current) {
+            cursorCanvasRef.current.width = img.width;
+            cursorCanvasRef.current.height = img.height;
+          }
+          setTimeout(() => {
+            const ctx = canvasRef.current?.getContext("2d");
+            ctx?.clearRect(0, 0, img.width, img.height);
+            ctx?.drawImage(img, 0, 0, img.width, img.height);
           }, 0);
         };
         img.src = src;
-      } catch (error) {
-        console.error("Error loading image:", error);
       }
     };
     loadImage();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [src, maxWidth, maxHeight]);
+  }, [src]);
 
   React.useEffect(() => {
     setCursorSize(initialCursorSize);
@@ -284,8 +306,9 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         maskContext.putImageData(imageData, 0, 0);
       }
     },
-    [maskContext, size]
+    [maskContext, size, maskColor]
   );
+
   React.useEffect(() => {
     replaceMaskColor(maskColor, false);
   }, [maskColor, size, replaceMaskColor]);

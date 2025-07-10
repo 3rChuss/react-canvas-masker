@@ -7,9 +7,12 @@ export const toMask = (canvas: HTMLCanvasElement) => {
   const imageData = ctx?.getImageData(0, 0, size.x, size.y);
   const origData = Uint8ClampedArray.from(imageData.data);
   if (imageData) {
-    for (var i = 0; i < imageData?.data.length; i += 4) {
-      const pixelColor =
-        imageData.data[i] === 255 ? [255, 255, 255] : [0, 0, 0];
+    for (let i = 0; i < imageData.data.length; i += 4) {
+      const isBlack =
+        imageData.data[i] === 0 &&
+        imageData.data[i + 1] === 0 &&
+        imageData.data[i + 2] === 0;
+      const pixelColor = isBlack ? [0, 0, 0] : [255, 255, 255];
       imageData.data[i] = pixelColor[0];
       imageData.data[i + 1] = pixelColor[1];
       imageData.data[i + 2] = pixelColor[2];
@@ -19,7 +22,7 @@ export const toMask = (canvas: HTMLCanvasElement) => {
   }
 
   const dataUrl = canvas.toDataURL();
-  for (var i = 0; i < imageData?.data.length; i++) {
+  for (let i = 0; i < imageData?.data.length; i++) {
     imageData.data[i] = origData[i];
   }
   ctx.putImageData(imageData, 0, 0);
