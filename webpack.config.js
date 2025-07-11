@@ -1,41 +1,42 @@
-const path = require("path");
-const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const path = require('path');
 
-const devMode = process.env.NODE_ENV !== "production";
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+
+const devMode = process.env.NODE_ENV !== 'production';
 
 module.exports = {
-  entry: path.resolve(__dirname, "src/index.ts"),
+  entry: path.resolve(__dirname, 'src/index.ts'),
   output: {
-    path: path.resolve(__dirname, "dist"),
-    filename: "index.js",
+    path: path.resolve(__dirname, 'dist'),
+    filename: 'index.js',
     library: {
-      type: "umd",
-      name: "@3rchuss/react-canvas-masker",
+      type: 'umd',
+      name: '@3rchuss/react-canvas-masker',
     },
   },
   resolve: {
-    extensions: [".ts", ".tsx", ".js", ".json", ".less", ".css"],
-    modules: ["node_modules"],
+    extensions: ['.ts', '.tsx', '.js', '.json', '.less', '.css'],
+    modules: ['node_modules'],
   },
-  externals: ["react"],
+  externals: ['react'],
   module: {
     rules: [
       {
         test: /\.(ts)x?$/,
         exclude: [/node_modules/, /example/],
-        use: [{ loader: "ts-loader" }],
+        use: [{ loader: 'ts-loader' }],
       },
       {
         test: /\.less$/,
         use: [
           {
-            loader: devMode ? "style-loader" : MiniCssExtractPlugin.loader,
+            loader: devMode ? 'style-loader' : MiniCssExtractPlugin.loader,
           },
           {
-            loader: "css-loader",
+            loader: 'css-loader',
           },
           {
-            loader: "less-loader",
+            loader: 'less-loader',
             options: {
               lessOptions: {
                 javascriptEnabled: true,
@@ -46,11 +47,11 @@ module.exports = {
       },
       {
         test: /\.svg$/,
-        type: "asset/inline",
+        type: 'asset/inline',
       },
       {
         test: /\.(png|jpg|gif|woff|woff2|eot|ttf|otf)$/,
-        type: "asset/resource",
+        type: 'asset/resource',
       },
     ],
   },
@@ -59,8 +60,8 @@ module.exports = {
       ? []
       : [
           new MiniCssExtractPlugin({
-            filename: "style.css",
+            filename: 'style.css',
           }),
-        ]
+        ],
   ),
 };

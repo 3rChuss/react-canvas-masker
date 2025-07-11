@@ -1,24 +1,31 @@
 {
   "compilerOptions": {
+    "skipLibCheck": true,
     "outDir": "./dist/",
+    "rootDir": "./src",
     "noImplicitAny": false,
     "module": "commonjs",
-    "target": "es5",
-    "jsx": "react",
+    "target": "es2021",
+    "jsx": "react-jsx",
     "allowJs": true,
     "declaration": true,
     "declarationDir": "./dist",
     "allowSyntheticDefaultImports": true,
+    "moduleResolution": "node",
     "lib": [
       "es2021",
-      "ES2015.Promise",
-      "ES5",
-      "DOM"
+      "dom"
     ]
   },
   "exclude": [
     "example",
     "test",
-    "node_modules"
+    "node_modules",
+    "dist",
+    "eslint.config.js",
+    "webpack.config.js"
+  ],
+  "include": [
+    "src/**/*"
   ]
 }

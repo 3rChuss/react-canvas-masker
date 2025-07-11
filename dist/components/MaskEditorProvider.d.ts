@@ -1,5 +1,5 @@
-import * as React from "react";
-import { UseMaskEditorProps, UseMaskEditorReturn } from "../hooks/useMaskEditor";
+import * as React from 'react';
+import { UseMaskEditorProps, UseMaskEditorReturn } from '../hooks/useMaskEditor';
 export interface MaskEditorContextValue extends UseMaskEditorReturn {
 }
 export declare const MaskEditorProvider: React.FC<UseMaskEditorProps & {

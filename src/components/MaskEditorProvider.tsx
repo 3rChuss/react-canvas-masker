@@ -1,14 +1,16 @@
-import * as React from "react";
+import * as React from 'react';
+
 import {
   useMaskEditor,
   UseMaskEditorProps,
   UseMaskEditorReturn,
-} from "../hooks/useMaskEditor";
+} from '../hooks/useMaskEditor';
 
 export interface MaskEditorContextValue extends UseMaskEditorReturn {}
 
-const MaskEditorContext =
-  React.createContext<MaskEditorContextValue | undefined>(undefined);
+const MaskEditorContext = React.createContext<
+  MaskEditorContextValue | undefined
+>(undefined);
 
 export const MaskEditorProvider: React.FC<
   UseMaskEditorProps & { children: React.ReactNode }
@@ -25,7 +27,7 @@ export function useMaskEditorContext(): MaskEditorContextValue {
   const ctx = React.useContext(MaskEditorContext);
   if (!ctx)
     throw new Error(
-      "useMaskEditorContext must be used within a MaskEditorProvider"
+      'useMaskEditorContext must be used within a MaskEditorProvider',
     );
   return ctx;
 }

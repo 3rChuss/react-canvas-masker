@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 export interface HistoryState {
     imageData: ImageData;
     timestamp: number;
@@ -22,7 +22,7 @@ export interface UseMaskEditorProps {
     onCursorSizeChange?: (size: number) => void;
     maskOpacity?: number;
     maskColor?: string;
-    maskBlendMode?: "normal" | "multiply" | "screen" | "overlay" | "darken" | "lighten" | "color-dodge" | "color-burn" | "hard-light" | "soft-light" | "difference" | "exclusion" | "hue" | "saturation" | "color" | "luminosity";
+    maskBlendMode?: 'normal' | 'multiply' | 'screen' | 'overlay' | 'darken' | 'lighten' | 'color-dodge' | 'color-burn' | 'hard-light' | 'soft-light' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity';
     onDrawingChange: (isDrawing: boolean) => void;
     onUndoRequest?: () => void;
     onRedoRequest?: () => void;

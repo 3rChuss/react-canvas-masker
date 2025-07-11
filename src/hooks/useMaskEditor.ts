@@ -1,5 +1,6 @@
-import * as React from "react";
-import { hexToRgb, toMask, simpleDebounce } from "../utils";
+import * as React from 'react';
+
+import { hexToRgb, toMask, simpleDebounce } from '../utils';
 
 export interface HistoryState {
   imageData: ImageData;
@@ -26,22 +27,22 @@ export interface UseMaskEditorProps {
   maskOpacity?: number;
   maskColor?: string;
   maskBlendMode?:
-    | "normal"
-    | "multiply"
-    | "screen"
-    | "overlay"
-    | "darken"
-    | "lighten"
-    | "color-dodge"
-    | "color-burn"
-    | "hard-light"
-    | "soft-light"
-    | "difference"
-    | "exclusion"
-    | "hue"
-    | "saturation"
-    | "color"
-    | "luminosity";
+    | 'normal'
+    | 'multiply'
+    | 'screen'
+    | 'overlay'
+    | 'darken'
+    | 'lighten'
+    | 'color-dodge'
+    | 'color-burn'
+    | 'hard-light'
+    | 'soft-light'
+    | 'difference'
+    | 'exclusion'
+    | 'hue'
+    | 'saturation'
+    | 'color'
+    | 'luminosity';
   onDrawingChange: (isDrawing: boolean) => void;
   onUndoRequest?: () => void;
   onRedoRequest?: () => void;
@@ -83,8 +84,8 @@ export interface UseMaskEditorReturn {
 export const MaskEditorDefaults = {
   cursorSize: 10,
   maskOpacity: 0.4,
-  maskColor: "#ffffff",
-  maskBlendMode: "normal",
+  maskColor: '#ffffff',
+  maskBlendMode: 'normal',
 };
 
 const fetchImageAsBase64 = async (url: string): Promise<string> => {
@@ -130,8 +131,9 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const cursorCanvasRef = React.useRef<HTMLCanvasElement>(null);
 
-  const [context, setContext] =
-    React.useState<CanvasRenderingContext2D | null>(null);
+  const [context, setContext] = React.useState<CanvasRenderingContext2D | null>(
+    null,
+  );
   const [maskContext, setMaskContext] =
     React.useState<CanvasRenderingContext2D | null>(null);
   const [cursorContext, setCursorContext] =
@@ -149,15 +151,15 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   // Contexts
   React.useLayoutEffect(() => {
     if (canvasRef.current && !context) {
-      setContext(canvasRef.current.getContext("2d"));
+      setContext(canvasRef.current.getContext('2d'));
     }
   }, [canvasRef, context]);
 
   React.useLayoutEffect(() => {
     if (maskCanvasRef.current && !maskContext) {
-      const ctx = maskCanvasRef.current.getContext("2d");
+      const ctx = maskCanvasRef.current.getContext('2d');
       if (ctx) {
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size.x, size.y);
       }
       setMaskContext(ctx);
@@ -166,7 +168,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
   React.useLayoutEffect(() => {
     if (cursorCanvasRef.current && !cursorContext) {
-      setCursorContext(cursorCanvasRef.current.getContext("2d"));
+      setCursorContext(cursorCanvasRef.current.getContext('2d'));
     }
   }, [cursorCanvasRef, cursorContext]);
 
@@ -205,7 +207,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             cursorCanvasRef.current.height = targetHeight;
           }
           setTimeout(() => {
-            const ctx = canvasRef.current?.getContext("2d");
+            const ctx = canvasRef.current?.getContext('2d');
             ctx?.clearRect(0, 0, targetWidth, targetHeight);
             ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
@@ -216,8 +218,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         // Force re-render to update canvas
         setKey((prev) => prev + 1); // Force re-render to update canvas
       } catch (error) {
-        console.error("Error loading image:", error);
-        console.error("Trying to load image from src directly");
+        console.error('Error loading image:', error);
+        console.error('Trying to load image from src directly');
 
         const img = new window.Image();
         if (crossOrigin) {
@@ -247,7 +249,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             cursorCanvasRef.current.height = targetHeight;
           }
           setTimeout(() => {
-            const ctx = canvasRef.current?.getContext("2d");
+            const ctx = canvasRef.current?.getContext('2d');
             ctx?.clearRect(0, 0, targetWidth, targetHeight);
             ctx?.drawImage(img, 0, 0, targetWidth, targetHeight);
           }, 0);
@@ -259,7 +261,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       }
     };
     loadImage();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src, crossOrigin, maxWidth, maxHeight]);
 
   React.useEffect(() => {
@@ -282,7 +283,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       if (maskContext && evt.buttons > 0) {
         maskContext.beginPath();
         maskContext.fillStyle =
-          evt.buttons > 1 || evt.shiftKey ? "#ffffff" : maskColor;
+          evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
         maskContext.arc(evt.offsetX, evt.offsetY, currentCursorSize, 0, 360);
         maskContext.fill();
       }
@@ -291,7 +292,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       if (cursorContext) {
         const newSize = Math.max(
           1,
-          currentCursorSize + (evt.deltaY > 0 ? 1 : -1)
+          currentCursorSize + (evt.deltaY > 0 ? 1 : -1),
         );
         setCursorSize(newSize);
         onCursorSizeChange?.(newSize);
@@ -307,14 +308,14 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         evt.preventDefault();
       }
     };
-    cursorCanvasRef.current?.addEventListener("mousemove", listener);
+    cursorCanvasRef.current?.addEventListener('mousemove', listener);
     if (onCursorSizeChange) {
-      cursorCanvasRef.current?.addEventListener("wheel", scrollListener);
+      cursorCanvasRef.current?.addEventListener('wheel', scrollListener);
     }
     return () => {
-      cursorCanvasRef.current?.removeEventListener("mousemove", listener);
+      cursorCanvasRef.current?.removeEventListener('mousemove', listener);
       if (onCursorSizeChange) {
-        cursorCanvasRef.current?.removeEventListener("wheel", scrollListener);
+        cursorCanvasRef.current?.removeEventListener('wheel', scrollListener);
       }
     };
   }, [
@@ -344,7 +345,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         maskContext.putImageData(imageData, 0, 0);
       }
     },
-    [maskContext, size, maskColor]
+    [maskContext, size, maskColor],
   );
 
   React.useEffect(() => {
@@ -385,7 +386,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         setHistoryIndex(index);
       }
     },
-    [history, maskContext, size]
+    [history, maskContext, size],
   );
 
   // Handlers
@@ -394,7 +395,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       e.preventDefault();
       setIsDrawing(true);
     },
-    []
+    [],
   );
   const handleMouseUp = React.useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -408,7 +409,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         }
       }, 0);
     },
-    [saveToHistory, onMaskChange, maskCanvasRef]
+    [saveToHistory, onMaskChange, maskCanvasRef],
   );
 
   React.useEffect(() => {
@@ -425,7 +426,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     return () => {
       if (debouncedMaskChange) debouncedMaskChange.cancel();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDrawing, maskCanvasRef, onMaskChange]);
 
   // Undo/Redo/Clear
@@ -479,30 +479,30 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       // Avoid interfering with input fields
       const tag = (e.target as HTMLElement)?.tagName;
       if (
-        tag === "INPUT" ||
-        tag === "TEXTAREA" ||
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
         (e.target as HTMLElement)?.isContentEditable
       )
         return;
       if (
         (e.ctrlKey || e.metaKey) &&
         !e.shiftKey &&
-        e.key.toLowerCase() === "z"
+        e.key.toLowerCase() === 'z'
       ) {
         e.preventDefault();
         undo();
       } else if (
         (e.ctrlKey || e.metaKey) &&
-        (e.key.toLowerCase() === "y" ||
-          (e.shiftKey && e.key.toLowerCase() === "z"))
+        (e.key.toLowerCase() === 'y' ||
+          (e.shiftKey && e.key.toLowerCase() === 'z'))
       ) {
         e.preventDefault();
         redo();
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, [undo, redo]);
 

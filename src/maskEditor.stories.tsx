@@ -1,32 +1,29 @@
-import type { Meta, StoryObj } from "@storybook/react";
-import React from "react";
-import { MaskEditor } from "./components/MaskEditor";
-import { useMaskEditor, type MaskEditorCanvasRef } from "./hooks/useMaskEditor";
-import { toMask } from "./utils";
-// @ts-ignore
-import icon from "./icon.png";
-// @ts-ignore
-import cat from "./cat.jpg";
+import React from 'react';
+
+import { MaskEditor } from './components/MaskEditor';
+import { useMaskEditor, type MaskEditorCanvasRef } from './hooks/useMaskEditor';
+import { toMask } from './utils';
+
+import type { Meta, StoryObj } from '@storybook/react';
 
 const meta: Meta<typeof MaskEditor> = {
   component: MaskEditor,
-  title: "Mask Editor",
+  title: 'Mask Editor',
 };
 export default meta;
 
 type Story = StoryObj<typeof MaskEditor>;
 
-// Ejemplo usando el componente MaskEditor (API clásica)
 export const BareEditorStory: Story = {
   args: {
-    src: icon,
-    maskColor: "#ffffff",
+    src: '../../cat.jpg',
+    maskColor: '#ffffff',
   },
-  name: "Default",
+  name: 'Default',
   render: (args) => {
     const [size, setSize] = React.useState(10);
     const canvas = React.useRef<MaskEditorCanvasRef>(null);
-    const [mask, setMask] = React.useState("");
+    const [mask, setMask] = React.useState('');
     return (
       <>
         <MaskEditor
@@ -35,10 +32,10 @@ export const BareEditorStory: Story = {
           onCursorSizeChange={setSize}
           canvasRef={canvas}
           onDrawingChange={(isDrawing) => {
-            console.log("Drawing state changed:", isDrawing);
+            console.log('Drawing state changed:', isDrawing);
           }}
-          onUndoRequest={() => console.log("Undo requested")}
-          onRedoRequest={() => console.log("Redo requested")}
+          onUndoRequest={() => console.log('Undo requested')}
+          onRedoRequest={() => console.log('Redo requested')}
         />
         <button onClick={() => setMask(toMask(canvas.current?.maskCanvas))}>
           Extract Mask
@@ -46,7 +43,7 @@ export const BareEditorStory: Story = {
         <button onClick={() => canvas.current?.undo?.()}>Undo</button>
         <button onClick={() => canvas.current?.redo?.()}>Redo</button>
         <button onClick={() => canvas.current?.clear?.()}>Clear</button>
-        <img src={mask} style={{ border: "1px solid gray" }} />
+        <img src={mask} style={{ border: '1px solid gray' }} />
       </>
     );
   },
@@ -54,14 +51,13 @@ export const BareEditorStory: Story = {
 
 export const CatEditorStory: Story = {
   args: {
-    src: "https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg",
-    maskColor: "#ffffff",
+    src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
+    maskColor: '#ffffff',
   },
-  name: "Non square image",
+  name: 'Non square image',
   render: BareEditorStory.render,
 };
 
-// Ejemplo usando el hook directamente (sin componente MaskEditor)
 export const HookUsageStory: Story = {
   render: () => {
     const [size, setSize] = React.useState(10);
@@ -76,16 +72,16 @@ export const HookUsageStory: Story = {
       redo,
       clear,
     } = useMaskEditor({
-      src: cat,
+      src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
       cursorSize: size,
       onCursorSizeChange: setSize,
-      maskColor: "#ffffff",
+      maskColor: '#ffffff',
       onDrawingChange: (isDrawing) =>
-        console.log("Drawing state changed:", isDrawing),
-      onUndoRequest: () => console.log("Undo requested"),
-      onRedoRequest: () => console.log("Redo requested"),
+        console.log('Drawing state changed:', isDrawing),
+      onUndoRequest: () => console.log('Undo requested'),
+      onRedoRequest: () => console.log('Redo requested'),
     });
-    const [mask, setMask] = React.useState("");
+    const [mask, setMask] = React.useState('');
     return (
       <div>
         <div className="react-mask-editor-outer">
@@ -108,7 +104,7 @@ export const HookUsageStory: Story = {
                 width: canvasSize.x,
                 height: canvasSize.y,
                 opacity: 0.75,
-                mixBlendMode: "normal",
+                mixBlendMode: 'normal',
               }}
               className="react-mask-editor-mask-canvas"
             />
@@ -129,9 +125,8 @@ export const HookUsageStory: Story = {
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
         <button onClick={clear}>Clear</button>
-        <img src={mask} style={{ border: "1px solid gray" }} />
+        <img src={mask} style={{ border: '1px solid gray' }} />
       </div>
     );
   },
 };
-

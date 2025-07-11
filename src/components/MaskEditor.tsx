@@ -1,8 +1,10 @@
-import * as React from "react";
-import "../maskEditor.less";
-import { useMaskEditor } from "../hooks/useMaskEditor";
-import type { UseMaskEditorProps } from "../hooks/useMaskEditor";
-import type { MaskEditorCanvasRef } from "../hooks/useMaskEditor";
+import * as React from 'react';
+
+import '../maskEditor.less';
+import { useMaskEditor } from '../hooks/useMaskEditor';
+
+import type { UseMaskEditorProps } from '../hooks/useMaskEditor';
+import type { MaskEditorCanvasRef } from '../hooks/useMaskEditor';
 
 export type { MaskEditorCanvasRef };
 
@@ -37,7 +39,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
       redo,
       clear,
     }),
-    [maskCanvasRef, undo, redo, clear]
+    [maskCanvasRef, undo, redo, clear],
   );
 
   return (
