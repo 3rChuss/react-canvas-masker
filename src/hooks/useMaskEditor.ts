@@ -328,13 +328,19 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   // Contexts
   React.useLayoutEffect(() => {
     if (canvasRef.current && !context) {
-      setContext(canvasRef.current.getContext('2d'));
+      // Add willReadFrequently option for performance optimization
+      setContext(
+        canvasRef.current.getContext('2d', { willReadFrequently: true }),
+      );
     }
   }, [canvasRef, context]);
 
   React.useLayoutEffect(() => {
     if (maskCanvasRef.current && !maskContext) {
-      const ctx = maskCanvasRef.current.getContext('2d');
+      // Add willReadFrequently option for performance optimization
+      const ctx = maskCanvasRef.current.getContext('2d', {
+        willReadFrequently: true,
+      });
       if (ctx) {
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(0, 0, size.x, size.y);
@@ -345,13 +351,29 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
   React.useLayoutEffect(() => {
     if (cursorCanvasRef.current && !cursorContext) {
-      setCursorContext(cursorCanvasRef.current.getContext('2d'));
+      // Add willReadFrequently option for performance optimization
+      setCursorContext(
+        cursorCanvasRef.current.getContext('2d', { willReadFrequently: true }),
+      );
     }
   }, [cursorCanvasRef, cursorContext]);
 
   // Function to prepare and apply image size
   const prepareAndApplyImage = React.useCallback(
     (img: HTMLImageElement) => {
+      console.log(
+        'Preparing image with dimensions:',
+        img.width,
+        'x',
+        img.height,
+      );
+
+      // Validate image dimensions
+      if (img.width === 0 || img.height === 0) {
+        console.error('Invalid image dimensions:', img.width, 'x', img.height);
+        return;
+      }
+
       // Calculate dimensions
       let targetWidth = img.width;
       let targetHeight = img.height;
@@ -361,10 +383,17 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         const ratio = Math.min(widthRatio, heightRatio);
         targetWidth = Math.round(img.width * ratio);
         targetHeight = Math.round(img.height * ratio);
+        console.log(
+          'Resizing image to fit within max dimensions:',
+          targetWidth,
+          'x',
+          targetHeight,
+        );
       }
 
       // Set size state and update canvases
       setSize({ x: targetWidth, y: targetHeight });
+      console.log('Setting canvas size to:', targetWidth, 'x', targetHeight);
 
       // Apply dimensions to all canvases
       [canvasRef, maskCanvasRef, cursorCanvasRef].forEach((ref) => {
@@ -376,10 +405,29 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       // Draw image on main canvas
       setTimeout(() => {
-        const ctx = canvasRef.current?.getContext('2d');
-        if (ctx) {
-          ctx.clearRect(0, 0, targetWidth, targetHeight);
-          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+        try {
+          const ctx = canvasRef.current?.getContext('2d', {
+            willReadFrequently: true,
+          });
+          if (ctx) {
+            ctx.clearRect(0, 0, targetWidth, targetHeight);
+
+            // Handle potential issues with image drawing
+            try {
+              ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+              console.log('Image drawn successfully on canvas');
+            } catch (drawError) {
+              console.error('Error drawing image on canvas:', drawError);
+              // Attempt to diagnose the issue
+              if (img.complete) {
+                console.log('Image is complete but may have loading issues');
+              } else {
+                console.log('Image is not fully loaded');
+              }
+            }
+          }
+        } catch (contextError) {
+          console.error('Error getting canvas context:', contextError);
         }
       }, 0);
 
@@ -399,26 +447,42 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       // Create image element
       const img = new window.Image();
-      if (crossOrigin) {
-        img.crossOrigin = crossOrigin;
+
+      // Always set crossOrigin for remote images to avoid tainted canvas issues
+      if (src.startsWith('http')) {
+        img.crossOrigin = crossOrigin || 'anonymous';
       }
 
       // Set up onload and error handlers
       img.onload = () => {
+        console.log('Image loaded successfully:', img.width, 'x', img.height);
         prepareAndApplyImage(img);
       };
 
       img.onerror = (error) => {
-        console.error('Error al cargar la imagen:', error);
+        console.error('Error loading image:', error);
+        console.error('Image source that failed:', src);
       };
 
-      // Try to load image with fetch first (to handle CORS)
-      try {
-        const base64Src = await fetchImageAsBase64(src);
-        img.src = base64Src;
-      } catch (error) {
-        console.error('Error cargando imagen con fetch:', error);
-        // Try direct load as fallback
+      // Try to load image with fetch first for remote URLs (to handle CORS)
+      if (src.startsWith('http')) {
+        try {
+          console.log('Fetching image via fetch API:', src);
+          const base64Src = await fetchImageAsBase64(src);
+          img.src = base64Src;
+        } catch (error) {
+          console.error(
+            'Error loading image with fetch, falling back to direct load:',
+            error,
+          );
+          img.src = src;
+        }
+      } else {
+        // For local or data URLs, load directly
+        console.log(
+          'Loading image directly:',
+          src.substring(0, 50) + (src.length > 50 ? '...' : ''),
+        );
         img.src = src;
       }
     };
