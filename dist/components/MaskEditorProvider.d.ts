@@ -6,3 +6,4 @@ export declare const MaskEditorProvider: React.FC<UseMaskEditorProps & {
     children: React.ReactNode;
 }>;
 export declare function useMaskEditorContext(): MaskEditorContextValue;
+//# sourceMappingURL=MaskEditorProvider.d.ts.map

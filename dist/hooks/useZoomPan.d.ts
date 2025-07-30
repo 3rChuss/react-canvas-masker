@@ -34,3 +34,4 @@ export declare function useZoomPan(containerRef: React.RefObject<HTMLDivElement>
     x: number;
     y: number;
 }, options?: ZoomPanOptions): [ZoomPanState, ZoomPanActions];
+//# sourceMappingURL=useZoomPan.d.ts.map

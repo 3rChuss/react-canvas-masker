@@ -113,3 +113,4 @@ export declare const MaskEditorDefaults: {
     constrainPan: boolean;
 };
 export declare function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn;
+//# sourceMappingURL=useMaskEditor.d.ts.map

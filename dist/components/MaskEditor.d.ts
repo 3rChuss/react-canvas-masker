@@ -7,3 +7,4 @@ export interface MaskEditorProps extends UseMaskEditorProps {
     canvasRef?: React.RefObject<MaskEditorCanvasRef>;
 }
 export declare const MaskEditor: React.FC<MaskEditorProps>;
+//# sourceMappingURL=MaskEditor.d.ts.map

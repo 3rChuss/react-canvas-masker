@@ -20,3 +20,4 @@ export declare function useHistory(context: CanvasRenderingContext2D | null, siz
     clear: () => void;
 };
 export {};
+//# sourceMappingURL=useHistory.d.ts.map

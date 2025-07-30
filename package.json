@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-masker",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "3rchuss",
@@ -31,11 +31,13 @@
   "scripts": {
     "clean": "rimraf dist/",
     "tsc": "tsc --noEmit",
+    "tsc:declaration": "tsc --emitDeclarationOnly",
     "eslint": "eslint ./src --ext .js,.jsx,.ts,.tsx",
     "compile": "npm-run-all eslint tsc build",
     "build": "cross-env NODE_ENV=production webpack --config webpack.config.js --mode production",
-    "dist": "npm-run-all clean compile",
-    "storybook": "storybook dev -p 6006"
+    "dist": "npm-run-all clean tsc:declaration compile",
+    "storybook": "storybook dev -p 6006",
+    "prepublishOnly": "npm run dist"
   },
   "devDependencies": {
     "@storybook/addon-docs": "^9.0.16",
