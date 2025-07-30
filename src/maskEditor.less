@@ -17,6 +17,8 @@
 
     .all-canvases {
       position: relative;
+      will-change: transform; // Optimiza el rendimiento de las transformaciones
+      touch-action: none; // Previene gestos táctiles predeterminados
     }
   }
 

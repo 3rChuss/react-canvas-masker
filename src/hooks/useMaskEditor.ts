@@ -51,6 +51,26 @@ export interface UseMaskEditorProps {
    * Debounced while drawing, called immediately on mouse up.
    */
   onMaskChange?: (mask: string) => void;
+  /**
+   * Current zoom scale (default: 1)
+   */
+  scale?: number;
+  /**
+   * Minimum allowed zoom scale (default: 0.5)
+   */
+  minScale?: number;
+  /**
+   * Maximum allowed zoom scale (default: 4)
+   */
+  maxScale?: number;
+  /**
+   * Callback when zoom scale changes
+   */
+  onScaleChange?: (scale: number) => void;
+  /**
+   * Enable/disable zoom with mouse wheel (default: true)
+   */
+  enableWheelZoom?: boolean;
 }
 
 export interface MaskEditorCanvasRef {
@@ -58,6 +78,7 @@ export interface MaskEditorCanvasRef {
   undo: () => void;
   redo: () => void;
   clear: () => void;
+  resetZoom: () => void;
 }
 
 export interface UseMaskEditorReturn {
@@ -79,6 +100,15 @@ export interface UseMaskEditorReturn {
   setCursorSize: React.Dispatch<React.SetStateAction<number>>;
   size: { x: number; y: number };
   undo: () => void;
+  scale: number;
+  setScale: React.Dispatch<React.SetStateAction<number>>;
+  transform: {
+    scale: number;
+    translateX: number;
+    translateY: number;
+  };
+  containerRef: React.RefObject<HTMLDivElement>;
+  resetZoom: () => void;
 }
 
 export const MaskEditorDefaults = {
@@ -86,6 +116,10 @@ export const MaskEditorDefaults = {
   maskOpacity: 0.4,
   maskColor: '#ffffff',
   maskBlendMode: 'normal',
+  scale: 1,
+  minScale: 0.5,
+  maxScale: 4,
+  enableWheelZoom: true,
 };
 
 const fetchImageAsBase64 = async (url: string): Promise<string> => {
@@ -117,6 +151,11 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     onUndoRequest,
     onRedoRequest,
     onMaskChange,
+    scale: initialScale = MaskEditorDefaults.scale,
+    minScale = MaskEditorDefaults.minScale,
+    maxScale = MaskEditorDefaults.maxScale,
+    onScaleChange,
+    enableWheelZoom = MaskEditorDefaults.enableWheelZoom,
   } = props;
 
   // Debounced mask change callback
@@ -130,6 +169,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const cursorCanvasRef = React.useRef<HTMLCanvasElement>(null);
+  // Container ref for zoom transformations
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   const [context, setContext] = React.useState<CanvasRenderingContext2D | null>(
     null,
@@ -147,6 +188,39 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const [historyIndex, setHistoryIndex] = React.useState(-1);
   const [currentCursorSize, setCursorSize] = React.useState(initialCursorSize);
   const [key, setKey] = React.useState(0);
+  // Zoom state
+  const [scale, setScale] = React.useState(initialScale);
+  const [transform, setTransform] = React.useState({
+    scale: initialScale,
+    translateX: 0,
+    translateY: 0,
+  });
+
+  // Add a reset function to completely reset zoom and position
+  const resetZoom = React.useCallback(() => {
+    setScale(1);
+    setTransform({
+      scale: 1,
+      translateX: 0,
+      translateY: 0,
+    });
+    onScaleChange?.(1);
+  }, [onScaleChange]);
+
+  // Update scale when initialScale prop changes
+  React.useEffect(() => {
+    setScale(initialScale);
+    // Reset translation when scale is set to 1 (default scale)
+    if (initialScale === 1) {
+      setTransform({
+        scale: initialScale,
+        translateX: 0,
+        translateY: 0,
+      });
+    } else {
+      setTransform((prev) => ({ ...prev, scale: initialScale }));
+    }
+  }, [initialScale]);
 
   // Contexts
   React.useLayoutEffect(() => {
@@ -267,55 +341,107 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     setCursorSize(initialCursorSize);
   }, [initialCursorSize]);
 
+  // Mouse event coordinate conversion - convert screen coordinates to image coordinates
+  const getImageCoordinates = React.useCallback(
+    (clientX: number, clientY: number) => {
+      if (!containerRef.current) return { x: 0, y: 0 };
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const offsetY = clientY - rect.top;
+
+      // Corregir la fórmula para convertir coordenadas de pantalla a coordenadas de imagen
+      const x = offsetX / transform.scale - transform.translateX;
+      const y = offsetY / transform.scale - transform.translateY;
+
+      return { x, y };
+    },
+    [transform],
+  );
+
   // Cursor and mask drawing
   React.useEffect(() => {
     const listener = (evt: MouseEvent) => {
+      if (!containerRef.current) return;
+
+      const { x: imageX, y: imageY } = getImageCoordinates(
+        evt.clientX,
+        evt.clientY,
+      );
+
       if (cursorContext) {
         cursorContext.clearRect(0, 0, size.x, size.y);
         cursorContext.beginPath();
         cursorContext.fillStyle = maskColor;
         cursorContext.strokeStyle = maskColor;
         cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
-        cursorContext.arc(evt.offsetX, evt.offsetY, currentCursorSize, 0, 360);
+        cursorContext.arc(imageX, imageY, currentCursorSize, 0, 360);
         cursorContext.fill();
         cursorContext.stroke();
       }
+
       if (maskContext && evt.buttons > 0) {
         maskContext.beginPath();
         maskContext.fillStyle =
           evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
-        maskContext.arc(evt.offsetX, evt.offsetY, currentCursorSize, 0, 360);
+        maskContext.arc(imageX, imageY, currentCursorSize, 0, 360);
         maskContext.fill();
       }
     };
+
+    // Restaurar el evento wheel para cambiar el tamaño del cursor
     const scrollListener = (evt: WheelEvent) => {
-      if (cursorContext) {
+      // Solo cambiar el tamaño del cursor si NO se presiona Ctrl/Cmd
+      if (
+        !evt.ctrlKey &&
+        !evt.metaKey &&
+        cursorContext &&
+        containerRef.current
+      ) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const { x: imageX, y: imageY } = getImageCoordinates(
+          evt.clientX,
+          evt.clientY,
+        );
+
         const newSize = Math.max(
           1,
           currentCursorSize + (evt.deltaY > 0 ? 1 : -1),
         );
         setCursorSize(newSize);
         onCursorSizeChange?.(newSize);
+
         cursorContext.clearRect(0, 0, size.x, size.y);
         cursorContext.beginPath();
         cursorContext.fillStyle = maskColor;
         cursorContext.strokeStyle = maskColor;
         cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
-        cursorContext.arc(evt.offsetX, evt.offsetY, newSize, 0, 360);
+        cursorContext.arc(imageX, imageY, newSize, 0, 360);
         cursorContext.fill();
         cursorContext.stroke();
+
         evt.stopPropagation();
         evt.preventDefault();
       }
     };
-    cursorCanvasRef.current?.addEventListener('mousemove', listener);
-    if (onCursorSizeChange) {
-      cursorCanvasRef.current?.addEventListener('wheel', scrollListener);
-    }
-    return () => {
-      cursorCanvasRef.current?.removeEventListener('mousemove', listener);
+
+    // Replace previous mousemove listener
+    const cursorCanvas = cursorCanvasRef.current;
+    if (cursorCanvas) {
+      cursorCanvas.addEventListener('mousemove', listener);
       if (onCursorSizeChange) {
-        cursorCanvasRef.current?.removeEventListener('wheel', scrollListener);
+        cursorCanvas.addEventListener('wheel', scrollListener, {
+          passive: false,
+        });
+      }
+    }
+
+    return () => {
+      if (cursorCanvas) {
+        cursorCanvas.removeEventListener('mousemove', listener);
+        if (onCursorSizeChange) {
+          cursorCanvas.removeEventListener('wheel', scrollListener);
+        }
       }
     };
   }, [
@@ -324,8 +450,68 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     currentCursorSize,
     maskColor,
     size,
+    scale,
+    transform,
+    getImageCoordinates,
     onCursorSizeChange,
+    maskOpacity,
   ]);
+
+  // Handle zoom with mouse wheel
+  React.useEffect(() => {
+    if (!enableWheelZoom || !containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const handleWheel = (e: WheelEvent) => {
+      // Only zoom when Ctrl/Cmd key is pressed
+      if (!e.ctrlKey && !e.metaKey) return;
+
+      e.preventDefault();
+
+      // Get mouse position relative to container
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      // Calculate zoom delta (smaller steps for smoother zoom)
+      const delta = -e.deltaY * 0.01;
+      const newScale = Math.max(minScale, Math.min(maxScale, scale + delta));
+
+      if (newScale !== scale) {
+        // Corregir el cálculo para centrar el zoom en el cursor
+        // 1. Convertir posición del mouse a coordenadas de imagen actual
+        const mouseXInImage = mouseX / scale;
+        const mouseYInImage = mouseY / scale;
+
+        // 2. Calcular la nueva posición del mouse después del zoom
+        const newMouseXInImage = mouseX / newScale;
+        const newMouseYInImage = mouseY / newScale;
+
+        // 3. Calcular la diferencia necesaria para mantener el punto bajo el cursor
+        const translateX =
+          transform.translateX + (newMouseXInImage - mouseXInImage);
+        const translateY =
+          transform.translateY + (newMouseYInImage - mouseYInImage);
+
+        setScale(newScale);
+        setTransform({
+          scale: newScale,
+          translateX,
+          translateY,
+        });
+
+        // Notify parent component about scale change
+        onScaleChange?.(newScale);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [scale, transform, minScale, maxScale, enableWheelZoom, onScaleChange]);
 
   // Replace mask color
   const replaceMaskColor = React.useCallback(
@@ -393,9 +579,21 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const handleMouseDown = React.useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
+
+      // Get the transformed coordinates
+      const { x, y } = getImageCoordinates(e.clientX, e.clientY);
+
+      if (maskContext) {
+        maskContext.beginPath();
+        maskContext.fillStyle =
+          e.buttons > 1 || e.shiftKey ? '#ffffff' : maskColor;
+        maskContext.arc(x, y, currentCursorSize, 0, 360);
+        maskContext.fill();
+      }
+
       setIsDrawing(true);
     },
-    [],
+    [getImageCoordinates, maskContext, currentCursorSize, maskColor],
   );
   const handleMouseUp = React.useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -484,6 +682,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         (e.target as HTMLElement)?.isContentEditable
       )
         return;
+
       if (
         (e.ctrlKey || e.metaKey) &&
         !e.shiftKey &&
@@ -500,6 +699,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         redo();
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
@@ -525,5 +725,10 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     maskBlendMode,
     history,
     historyIndex,
+    scale,
+    setScale,
+    transform,
+    containerRef,
+    resetZoom,
   };
 }
