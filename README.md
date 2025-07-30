@@ -117,31 +117,31 @@ The `MaskEditor` component exposes useful methods via `ref`:
 You can manage the full mask editing flow yourself:
 
 ```tsx
-import { useMaskEditor } from 'react-canvas-masker';
-
 const CustomMaskEditor = () => {
   const {
     canvasRef,
-    maskCanvasRef,
+    clear,
     cursorCanvasRef,
-    containerRef, // Container reference for zoom/pan
-    size,
-    scale, // Current zoom scale
-    transform, // Current transform state with scale and translation
     handleMouseDown,
     handleMouseUp,
-    undo,
+    key,
+    maskBlendMode,
+    maskCanvasRef,
+    maskOpacity,
     redo,
-    clear,
-    resetZoom, // Reset zoom and center the image
-    setPan, // Set pan position manually
-    isPanning, // Boolean indicating if currently panning
+    transform,
+    effectiveScale,
+    size,
+    undo,
+    containerRef,
+    resetZoom,
+    isPanning,
+    setPan,
   } = useMaskEditor({
     src: 'https://placekitten.com/256/256',
     maskColor: '#00ff00',
     maxWidth: 1024, // Optional: limit image width
     maxHeight: 1024, // Optional: limit image height
-    crossOrigin: 'anonymous', // Optional: set crossOrigin for CORS
     onDrawingChange: (drawing) => console.log(drawing),
     // Zoom and pan options
     scale: 1, // Initial scale
@@ -153,36 +153,103 @@ const CustomMaskEditor = () => {
     onPanChange: (x, y) => console.log(`Pan position: ${x}, ${y}`),
   });
 
+  const transformStyle = React.useMemo(() => {
+    return {
+      position: 'absolute' as const,
+      top: '50%',
+      left: '50%',
+      transform: `translate(-50%, -50%) scale(${effectiveScale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
+      transformOrigin: 'center',
+      transition: isPanning ? 'none' : 'transform 0.15s ease-out',
+      width: size.x + 'px',
+      height: size.y + 'px',
+      display: 'block',
+    };
+  }, [transform, effectiveScale, isPanning, size]);
+
   return (
     <div
-      ref={containerRef}
-      style={{ width: '100%', height: '500px', position: 'relative' }}
+      className="react-mask-editor-outer"
+      style={{
+        maxWidth: `${1024}px`,
+        maxHeight: `${1024}px`,
+        minHeight: '300px',
+        width: '100%',
+        height: '100%',
+      }}
+      tabIndex={0}
     >
-      <div
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: `translate(-50%, -50%) scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
-          transition: isPanning ? 'none' : 'transform 0.15s ease-out',
-        }}
-      >
-        <canvas ref={canvasRef} width={size.x} height={size.y} />
-        <canvas ref={maskCanvasRef} width={size.x} height={size.y} />
-        <canvas
-          ref={cursorCanvasRef}
-          width={size.x}
-          height={size.y}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-        />
-      </div>
       <div className="controls">
         <button onClick={undo}>Undo</button>
         <button onClick={redo}>Redo</button>
         <button onClick={clear}>Clear</button>
         <button onClick={resetZoom}>Reset Zoom</button>
         <button onClick={() => setPan(0, 0)}>Center Image</button>
+      </div>
+      <div
+        className="react-mask-editor-inner"
+        ref={containerRef}
+        style={{
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          position: 'relative',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
+        <div
+          className="canvas-container"
+          style={{
+            position: 'relative',
+            maxWidth: '100%',
+            maxHeight: '100%',
+            width: '100%',
+            height: '100%',
+            minHeight: '200px',
+            overflow: 'hidden',
+          }}
+        >
+          <div className="all-canvases" style={transformStyle}>
+            <canvas
+              key={key}
+              ref={canvasRef}
+              style={{
+                width: size.x,
+                height: size.y,
+              }}
+              width={size.x}
+              height={size.y}
+              className="react-mask-editor-base-canvas"
+            />
+            <canvas
+              ref={maskCanvasRef}
+              width={size.x}
+              height={size.y}
+              style={{
+                width: size.x,
+                height: size.y,
+                opacity: maskOpacity,
+                mixBlendMode: maskBlendMode as any,
+              }}
+              className="react-mask-editor-mask-canvas"
+            />
+            <canvas
+              ref={cursorCanvasRef}
+              width={size.x}
+              height={size.y}
+              onMouseUp={handleMouseUp}
+              onMouseDown={handleMouseDown}
+              style={{
+                width: size.x,
+                height: size.y,
+                cursor: isPanning ? 'grabbing' : 'default',
+              }}
+              className="react-mask-editor-cursor-canvas"
+            />
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -323,7 +390,7 @@ const CustomZoomControls = () => {
 
 ---
 
-## �💡 Use Cases
+## 💡 Use Cases
 
 `react-canvas-masker` is great for:
 
