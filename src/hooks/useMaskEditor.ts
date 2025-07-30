@@ -132,7 +132,7 @@ export const MaskEditorDefaults = {
   maskColor: '#ffffff',
   maskBlendMode: 'normal',
   scale: 1,
-  minScale: 0.5,
+  minScale: 0.8,
   maxScale: 4,
   enableWheelZoom: true,
   constrainPan: true,

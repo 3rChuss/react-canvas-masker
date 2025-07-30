@@ -80,35 +80,25 @@ function App() {
             justifyContent: 'center',
           }}
         >
-          <div
-            style={{
-              position: 'relative',
-              width: '100%',
-              height: '400px',
-              border: '1px solid #ccc',
-            }}
-          >
-            <MaskEditor
-              key={'mask-editor'}
-              src="https://firebasestorage.googleapis.com/v0/b/aliz-otp-genai-poc-sandbox-assets/o/b0d9a293-3ce4-4b76-ba27-b945826e881b%2F1751276672390%2Fsample_1.png?alt=media&token=43eb8d0f-5db7-4f83-a1c9-c0f5d20487b8"
-              maskColor={color}
-              cursorSize={size}
-              onCursorSizeChange={setSize}
-              canvasRef={canvas}
-              maskOpacity={0.5}
-              onDrawingChange={console.log}
-              onUndoRequest={() => console.log('Undo requested')}
-              onRedoRequest={() => console.log('Redo requested')}
-              onMaskChange={setMask}
-              scale={scale}
-              minScale={0.5}
-              maxScale={4}
-              onScaleChange={setScale}
-              enableWheelZoom={true}
-              constrainPan={true}
-              onPanChange={(x, y) => setPanPosition({ x, y })}
-            />
-          </div>
+          <MaskEditor
+            key={'mask-editor'}
+            src="https://firebasestorage.googleapis.com/v0/b/aliz-otp-genai-poc-sandbox-assets/o/b0d9a293-3ce4-4b76-ba27-b945826e881b%2F1751276672390%2Fsample_1.png?alt=media&token=43eb8d0f-5db7-4f83-a1c9-c0f5d20487b8"
+            maskColor={color}
+            cursorSize={size}
+            onCursorSizeChange={setSize}
+            canvasRef={canvas}
+            maskOpacity={0.5}
+            onDrawingChange={console.log}
+            onUndoRequest={() => console.log('Undo requested')}
+            onRedoRequest={() => console.log('Redo requested')}
+            onMaskChange={setMask}
+            scale={scale}
+            maxScale={4}
+            onScaleChange={setScale}
+            enableWheelZoom={true}
+            constrainPan={true}
+            onPanChange={(x, y) => setPanPosition({ x, y })}
+          />
         </div>
         <div style={{ marginTop: 16 }}>
           <button
