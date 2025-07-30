@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import { HistoryState } from './useHistory';
 export interface UseMaskEditorProps {
     src: string;

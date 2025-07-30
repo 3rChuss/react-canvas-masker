@@ -18,7 +18,14 @@ module.exports = {
     extensions: ['.ts', '.tsx', '.js', '.json', '.less', '.css'],
     modules: ['node_modules'],
   },
-  externals: ['react'],
+  externals: {
+    react: {
+      commonjs: 'react',
+      commonjs2: 'react',
+      amd: 'React',
+      root: 'React',
+    },
+  },
   module: {
     rules: [
       {

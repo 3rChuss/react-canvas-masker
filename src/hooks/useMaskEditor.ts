@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 
 import { hexToRgb, toMask, simpleDebounce } from '../utils';
 

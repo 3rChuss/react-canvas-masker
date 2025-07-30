@@ -6,7 +6,7 @@
     "noImplicitAny": false,
     "module": "commonjs",
     "target": "es2021",
-    "jsx": "react-jsx",
+    "jsx": "react",
     "allowJs": true,
     "declaration": true,
     "declarationDir": "./dist",
