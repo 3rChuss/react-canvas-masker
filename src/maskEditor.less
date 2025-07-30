@@ -7,10 +7,12 @@
   align-items: stretch;
   width: 100%;
   height: 100%;
+  min-height: 300px;
+  margin: 0 auto;
+  border: 1px solid #ddd; /* Para visualizar mejor los límites */
 
   .react-mask-editor-inner {
     display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
     position: relative;
@@ -19,13 +21,26 @@
     width: 100%;
     height: 100%;
 
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+    }
+
     .all-canvases {
       position: relative;
       will-change: transform;
       touch-action: none;
-      transition: transform 0.05s ease-out;
-      width: max-content;
-      height: max-content;
+      width: auto;
+      height: auto;
+      /* Enable hardware acceleration for smoother transforms */
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
     }
   }
 
@@ -34,6 +49,7 @@
     top: 0;
     left: 0;
     display: block;
+
   }
 
   .react-mask-editor-base-canvas {
