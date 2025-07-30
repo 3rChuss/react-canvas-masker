@@ -4,7 +4,7 @@
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "3rchuss",
-  "types": "./dist/src/index.d.ts",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
