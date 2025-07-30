@@ -71,6 +71,15 @@ export interface UseMaskEditorProps {
    * Enable/disable zoom with mouse wheel (default: true)
    */
   enableWheelZoom?: boolean;
+  /**
+   * Callback when pan position changes (dx, dy)
+   */
+  onPanChange?: (x: number, y: number) => void;
+
+  /**
+   * Enable/disable pan constraints to keep image in view (default: true)
+   */
+  constrainPan?: boolean;
 }
 
 export interface MaskEditorCanvasRef {
@@ -79,6 +88,7 @@ export interface MaskEditorCanvasRef {
   redo: () => void;
   clear: () => void;
   resetZoom: () => void;
+  setPan: (x: number, y: number) => void;
 }
 
 export interface UseMaskEditorReturn {
@@ -109,6 +119,11 @@ export interface UseMaskEditorReturn {
   };
   containerRef: React.RefObject<HTMLDivElement>;
   resetZoom: () => void;
+  isPanning: boolean;
+  isZoomKeyDown: boolean;
+  setPan: (x: number, y: number) => void;
+  baseScale: number; // Factor de escala automática
+  effectiveScale: number; // Escala combinada (baseScale * userScale)
 }
 
 export const MaskEditorDefaults = {
@@ -120,6 +135,7 @@ export const MaskEditorDefaults = {
   minScale: 0.5,
   maxScale: 4,
   enableWheelZoom: true,
+  constrainPan: true,
 };
 
 const fetchImageAsBase64 = async (url: string): Promise<string> => {
@@ -156,6 +172,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     maxScale = MaskEditorDefaults.maxScale,
     onScaleChange,
     enableWheelZoom = MaskEditorDefaults.enableWheelZoom,
+    onPanChange,
+    constrainPan = MaskEditorDefaults.constrainPan,
   } = props;
 
   // Debounced mask change callback
@@ -195,32 +213,559 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     translateX: 0,
     translateY: 0,
   });
+  // Pan state
+  const [isPanning, setIsPanning] = React.useState(false);
+  const [isSpaceKeyDown, setIsSpaceKeyDown] = React.useState(false);
+  const [isZoomKeyDown, setIsZoomKeyDown] = React.useState(false);
+  const [lastMousePosition, setLastMousePosition] = React.useState({
+    x: 0,
+    y: 0,
+  });
 
-  // Add a reset function to completely reset zoom and position
+  // Scale factor for automatic scaling
+  const [baseScale, setBaseScale] = React.useState(1);
+  const [containerSize, setContainerSize] = React.useState({
+    width: 0,
+    height: 0,
+  });
+
+  // Reference for the last transform values
+  const lastTransformRef = React.useRef({
+    x: 0,
+    y: 0,
+  });
+
+  const lastKnownValuesRef = React.useRef({
+    baseScale: 1,
+    containerWidth: 0,
+    containerHeight: 0,
+  });
+
+  // Effective scale (combined)
+  const effectiveScale = React.useMemo(
+    () => baseScale * scale,
+    [baseScale, scale],
+  );
+
+  const getImageCoordinates = React.useCallback(
+    (clientX: number, clientY: number) => {
+      if (!containerRef.current) return { x: 0, y: 0 };
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const offsetX = clientX - rect.left;
+      const offsetY = clientY - rect.top;
+
+      const x = offsetX / (transform.scale * baseScale) - transform.translateX;
+      const y = offsetY / (transform.scale * baseScale) - transform.translateY;
+
+      return { x, y };
+    },
+    [transform, baseScale],
+  );
+
+  const calculateBaseScale = React.useCallback(() => {
+    if (!containerRef.current || size.x === 0 || size.y === 0)
+      return {
+        baseScale: 1,
+        containerWidth: 0,
+        containerHeight: 0,
+      };
+
+    const container = containerRef.current;
+    const computedStyle = window.getComputedStyle(container);
+    const paddingHorizontal =
+      parseFloat(computedStyle.paddingLeft) +
+      parseFloat(computedStyle.paddingRight);
+    const paddingVertical =
+      parseFloat(computedStyle.paddingTop) +
+      parseFloat(computedStyle.paddingBottom);
+
+    const availableWidth = container.clientWidth - paddingHorizontal;
+    const availableHeight = container.clientHeight - paddingVertical;
+
+    const widthRatio = availableWidth / size.x;
+    const heightRatio = availableHeight / size.y;
+
+    // Calculate the new base scale
+    const newBaseScale = Math.min(1, widthRatio, heightRatio);
+
+    return {
+      baseScale: newBaseScale,
+      containerWidth: availableWidth,
+      containerHeight: availableHeight,
+    };
+  }, [size]);
+
+  React.useEffect(() => {
+    // Only run when we have valid dimensions
+    if (size.x === 0 || size.y === 0 || !containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const {
+      baseScale: initialBaseScale,
+      containerWidth,
+      containerHeight,
+    } = calculateBaseScale();
+
+    if (Math.abs(initialBaseScale - baseScale) > 0.01) {
+      setBaseScale(initialBaseScale);
+    }
+
+    if (
+      Math.abs(containerWidth - containerSize.width) > 5 ||
+      Math.abs(containerHeight - containerSize.height) > 5
+    ) {
+      setContainerSize({ width: containerWidth, height: containerHeight });
+    }
+
+    lastKnownValuesRef.current = {
+      baseScale: initialBaseScale,
+      containerWidth,
+      containerHeight,
+    };
+
+    let resizeTimeout: ReturnType<typeof setTimeout>;
+    const resizeObserver = new ResizeObserver(() => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => {
+        const {
+          baseScale: newBaseScale,
+          containerWidth: newWidth,
+          containerHeight: newHeight,
+        } = calculateBaseScale();
+
+        if (
+          Math.abs(newBaseScale - lastKnownValuesRef.current.baseScale) > 0.01
+        ) {
+          lastKnownValuesRef.current.baseScale = newBaseScale;
+          setBaseScale(newBaseScale);
+        }
+
+        if (
+          Math.abs(newWidth - lastKnownValuesRef.current.containerWidth) > 5 ||
+          Math.abs(newHeight - lastKnownValuesRef.current.containerHeight) > 5
+        ) {
+          lastKnownValuesRef.current.containerWidth = newWidth;
+          lastKnownValuesRef.current.containerHeight = newHeight;
+          setContainerSize({ width: newWidth, height: newHeight });
+        }
+      }, 50);
+    });
+
+    resizeObserver.observe(container);
+
+    return () => {
+      clearTimeout(resizeTimeout);
+      resizeObserver.disconnect();
+    };
+  }, [
+    size,
+    calculateBaseScale,
+    baseScale,
+    containerSize.width,
+    containerSize.height,
+  ]);
+
+  React.useEffect(() => {
+    if (
+      !containerRef.current ||
+      size.x === 0 ||
+      size.y === 0 ||
+      containerSize.width === 0
+    ) {
+      return;
+    }
+
+    if (baseScale < 1) {
+      const centerOffsetX =
+        (containerSize.width - size.x * baseScale) / (2 * baseScale);
+      const centerOffsetY =
+        (containerSize.height - size.y * baseScale) / (2 * baseScale);
+
+      if (
+        Math.abs(lastTransformRef.current.x - centerOffsetX) > 0.5 ||
+        Math.abs(lastTransformRef.current.y - centerOffsetY) > 0.5
+      ) {
+        lastTransformRef.current = { x: centerOffsetX, y: centerOffsetY };
+
+        setTransform((prev) => ({
+          ...prev,
+          translateX: centerOffsetX,
+          translateY: centerOffsetY,
+        }));
+
+        if (onPanChange) {
+          const timer = setTimeout(() => {
+            onPanChange(centerOffsetX, centerOffsetY);
+          }, 0);
+          return () => clearTimeout(timer);
+        }
+      }
+    }
+  }, [baseScale, containerSize, size]);
+
+  // Cursor and mask drawing
+  React.useEffect(() => {
+    const listener = (evt: MouseEvent) => {
+      if (!containerRef.current || isPanning) return; // Skip drawing if panning
+
+      const { x: imageX, y: imageY } = getImageCoordinates(
+        evt.clientX,
+        evt.clientY,
+      );
+
+      if (cursorContext) {
+        cursorContext.clearRect(0, 0, size.x, size.y);
+        cursorContext.beginPath();
+        cursorContext.fillStyle = maskColor;
+        cursorContext.strokeStyle = maskColor;
+        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
+        cursorContext.arc(imageX, imageY, currentCursorSize, 0, 360);
+        cursorContext.fill();
+        cursorContext.stroke();
+      }
+
+      // Only draw if not panning and mouse button is pressed
+      if (maskContext && evt.buttons > 0 && !isPanning && !isSpaceKeyDown) {
+        maskContext.beginPath();
+        maskContext.fillStyle =
+          evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
+        maskContext.arc(imageX, imageY, currentCursorSize, 0, 360);
+        maskContext.fill();
+      }
+    };
+
+    const scrollListener = (evt: WheelEvent) => {
+      if (
+        !evt.ctrlKey &&
+        !evt.metaKey &&
+        cursorContext &&
+        containerRef.current
+      ) {
+        const { x: imageX, y: imageY } = getImageCoordinates(
+          evt.clientX,
+          evt.clientY,
+        );
+
+        const newSize = Math.max(
+          1,
+          currentCursorSize + (evt.deltaY > 0 ? 1 : -1),
+        );
+        setCursorSize(newSize);
+        onCursorSizeChange?.(newSize);
+
+        cursorContext.clearRect(0, 0, size.x, size.y);
+        cursorContext.beginPath();
+        cursorContext.fillStyle = maskColor;
+        cursorContext.strokeStyle = maskColor;
+        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
+        cursorContext.arc(imageX, imageY, newSize, 0, 360);
+        cursorContext.fill();
+        cursorContext.stroke();
+
+        evt.stopPropagation();
+        evt.preventDefault();
+      }
+    };
+
+    // Replace previous mousemove listener
+    const cursorCanvas = cursorCanvasRef.current;
+    if (cursorCanvas) {
+      cursorCanvas.addEventListener('mousemove', listener);
+      if (onCursorSizeChange) {
+        cursorCanvas.addEventListener('wheel', scrollListener, {
+          passive: false,
+        });
+      }
+    }
+
+    return () => {
+      if (cursorCanvas) {
+        cursorCanvas.removeEventListener('mousemove', listener);
+        if (onCursorSizeChange) {
+          cursorCanvas.removeEventListener('wheel', scrollListener);
+        }
+      }
+    };
+  }, [
+    cursorContext,
+    maskContext,
+    currentCursorSize,
+    maskColor,
+    size,
+    scale,
+    transform,
+    getImageCoordinates,
+    onCursorSizeChange,
+    maskOpacity,
+    isPanning,
+    isSpaceKeyDown,
+  ]);
+
+  // Handle zoom with mouse wheel
+  React.useEffect(() => {
+    if (!enableWheelZoom || !containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+
+      const rect = container.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+
+      const delta = -e.deltaY * 0.01;
+      const newScale = Math.max(minScale, Math.min(maxScale, scale + delta));
+
+      if (newScale !== scale) {
+        const currentEffectiveScale = scale * baseScale;
+        const newEffectiveScale = newScale * baseScale;
+
+        const mouseXInImage = mouseX / currentEffectiveScale;
+        const mouseYInImage = mouseY / currentEffectiveScale;
+
+        const newMouseXInImage = mouseX / newEffectiveScale;
+        const newMouseYInImage = mouseY / newEffectiveScale;
+
+        const translateX =
+          transform.translateX + (newMouseXInImage - mouseXInImage);
+        const translateY =
+          transform.translateY + (newMouseYInImage - mouseYInImage);
+
+        setScale(newScale);
+        setTransform({
+          ...transform,
+          scale: newScale,
+          translateX,
+          translateY,
+        });
+
+        onScaleChange?.(newScale);
+      }
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, [
+    scale,
+    transform,
+    baseScale,
+    minScale,
+    maxScale,
+    enableWheelZoom,
+    onScaleChange,
+  ]);
+
   const resetZoom = React.useCallback(() => {
     setScale(1);
-    setTransform({
-      scale: 1,
-      translateX: 0,
-      translateY: 0,
-    });
-    onScaleChange?.(1);
-  }, [onScaleChange]);
 
-  // Update scale when initialScale prop changes
-  React.useEffect(() => {
-    setScale(initialScale);
-    // Reset translation when scale is set to 1 (default scale)
-    if (initialScale === 1) {
+    if (baseScale < 1 && containerRef.current) {
+      const centerOffsetX =
+        (containerSize.width - size.x * baseScale) / (2 * baseScale);
+      const centerOffsetY =
+        (containerSize.height - size.y * baseScale) / (2 * baseScale);
+
       setTransform({
-        scale: initialScale,
+        scale: 1,
+        translateX: centerOffsetX,
+        translateY: centerOffsetY,
+      });
+    } else {
+      setTransform({
+        scale: 1,
         translateX: 0,
         translateY: 0,
       });
-    } else {
-      setTransform((prev) => ({ ...prev, scale: initialScale }));
     }
-  }, [initialScale]);
+
+    onScaleChange?.(1);
+    if (onPanChange) {
+      onPanChange(transform.translateX, transform.translateY);
+    }
+  }, [baseScale, containerSize, size, onScaleChange, onPanChange]);
+
+  // Add a setPan function to programmatically set pan position
+  const setPan = React.useCallback(
+    (x: number, y: number) => {
+      setTransform((prev) => {
+        // Apply constraints if enabled
+        let constrainedX = x;
+        let constrainedY = y;
+
+        if (constrainPan && containerRef.current) {
+          const containerWidth = containerRef.current.clientWidth;
+          const containerHeight = containerRef.current.clientHeight;
+          const contentWidth = size.x * transform.scale;
+          const contentHeight = size.y * transform.scale;
+
+          // Calculate maximum pan limits to prevent showing blank space
+          const maxPanX = Math.max(
+            0,
+            (contentWidth - containerWidth) / (2 * transform.scale),
+          );
+          const maxPanY = Math.max(
+            0,
+            (contentHeight - containerHeight) / (2 * transform.scale),
+          );
+
+          // Constrain within the calculated limits
+          constrainedX = Math.min(maxPanX, Math.max(-maxPanX, x));
+          constrainedY = Math.min(maxPanY, Math.max(-maxPanY, y));
+        }
+
+        // Notify parent about pan change if callback is provided
+        if (
+          onPanChange &&
+          (prev.translateX !== constrainedX || prev.translateY !== constrainedY)
+        ) {
+          onPanChange(constrainedX, constrainedY);
+        }
+
+        return {
+          ...prev,
+          translateX: constrainedX,
+          translateY: constrainedY,
+        };
+      });
+    },
+    [constrainPan, onPanChange, size, transform.scale],
+  );
+
+  // Keyboard event listeners for space key and ctrl/cmd key
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle if not in input element
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (
+        tag === 'INPUT' ||
+        tag === 'TEXTAREA' ||
+        (e.target as HTMLElement)?.isContentEditable
+      )
+        return;
+
+      // Activate panning mode with space key
+      if (e.code === 'Space' && !isSpaceKeyDown && transform.scale > 1) {
+        e.preventDefault();
+        setIsSpaceKeyDown(true);
+      }
+
+      // Track zoom key (Ctrl/Cmd) for cursor change
+      if ((e.ctrlKey || e.metaKey) && !isZoomKeyDown) {
+        setIsZoomKeyDown(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        setIsSpaceKeyDown(false);
+        setIsPanning(false);
+      }
+
+      // Check if Ctrl/Cmd keys were released
+      if (!e.ctrlKey && !e.metaKey && isZoomKeyDown) {
+        setIsZoomKeyDown(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    // Also handle when window loses focus
+    const handleBlur = () => {
+      setIsSpaceKeyDown(false);
+      setIsZoomKeyDown(false);
+      setIsPanning(false);
+    };
+
+    window.addEventListener('blur', handleBlur);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [isSpaceKeyDown, isZoomKeyDown, transform.scale]);
+
+  // Pan handling with mouse events
+  React.useEffect(() => {
+    if (!containerRef.current || transform.scale <= 1) return;
+
+    const container = containerRef.current;
+
+    const handleMouseDown = (e: MouseEvent) => {
+      // Middle mouse button (button === 1) or left button with space key pressed
+      if (e.button === 1 || (e.button === 0 && isSpaceKeyDown)) {
+        e.preventDefault();
+        setIsPanning(true);
+        setLastMousePosition({ x: e.clientX, y: e.clientY });
+
+        // Add grabbing cursor class to document body
+        document.body.classList.add('panning-active');
+      }
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isPanning) return;
+
+      e.preventDefault();
+
+      // Calculate delta movement
+      const deltaX = (e.clientX - lastMousePosition.x) / transform.scale;
+      const deltaY = (e.clientY - lastMousePosition.y) / transform.scale;
+
+      // Update pan position
+      setPan(transform.translateX + deltaX, transform.translateY + deltaY);
+
+      // Update last position
+      setLastMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (isPanning) {
+        setIsPanning(false);
+        document.body.classList.remove('panning-active');
+      }
+    };
+
+    // Also stop panning if mouse leaves the window
+    const handleMouseLeave = () => {
+      if (isPanning) {
+        setIsPanning(false);
+        document.body.classList.remove('panning-active');
+      }
+    };
+
+    container.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('mouseleave', handleMouseLeave);
+
+    return () => {
+      container.removeEventListener('mousedown', handleMouseDown);
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+      container.removeEventListener('mouseleave', handleMouseLeave);
+    };
+  }, [
+    isPanning,
+    isSpaceKeyDown,
+    lastMousePosition,
+    transform.scale,
+    transform.translateX,
+    transform.translateY,
+    setPan,
+  ]);
+
+  // Reset pan position when scale is reset to 1
+  React.useEffect(() => {
+    if (transform.scale <= 1) {
+      setPan(0, 0);
+    }
+  }, [transform.scale, setPan]);
 
   // Contexts
   React.useLayoutEffect(() => {
@@ -259,7 +804,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         img.onload = () => {
           let targetWidth = img.width;
           let targetHeight = img.height;
-          // Redimensionar si es más grande que el máximo
+          // Check if image exceeds max dimensions
           if (img.width > maxWidth || img.height > maxHeight) {
             const widthRatio = maxWidth / img.width;
             const heightRatio = maxHeight / img.height;
@@ -341,179 +886,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     setCursorSize(initialCursorSize);
   }, [initialCursorSize]);
 
-  // Mouse event coordinate conversion - convert screen coordinates to image coordinates
-  const getImageCoordinates = React.useCallback(
-    (clientX: number, clientY: number) => {
-      if (!containerRef.current) return { x: 0, y: 0 };
-
-      const rect = containerRef.current.getBoundingClientRect();
-      const offsetX = clientX - rect.left;
-      const offsetY = clientY - rect.top;
-
-      // Corregir la fórmula para convertir coordenadas de pantalla a coordenadas de imagen
-      const x = offsetX / transform.scale - transform.translateX;
-      const y = offsetY / transform.scale - transform.translateY;
-
-      return { x, y };
-    },
-    [transform],
-  );
-
-  // Cursor and mask drawing
-  React.useEffect(() => {
-    const listener = (evt: MouseEvent) => {
-      if (!containerRef.current) return;
-
-      const { x: imageX, y: imageY } = getImageCoordinates(
-        evt.clientX,
-        evt.clientY,
-      );
-
-      if (cursorContext) {
-        cursorContext.clearRect(0, 0, size.x, size.y);
-        cursorContext.beginPath();
-        cursorContext.fillStyle = maskColor;
-        cursorContext.strokeStyle = maskColor;
-        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
-        cursorContext.arc(imageX, imageY, currentCursorSize, 0, 360);
-        cursorContext.fill();
-        cursorContext.stroke();
-      }
-
-      if (maskContext && evt.buttons > 0) {
-        maskContext.beginPath();
-        maskContext.fillStyle =
-          evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
-        maskContext.arc(imageX, imageY, currentCursorSize, 0, 360);
-        maskContext.fill();
-      }
-    };
-
-    // Restaurar el evento wheel para cambiar el tamaño del cursor
-    const scrollListener = (evt: WheelEvent) => {
-      // Solo cambiar el tamaño del cursor si NO se presiona Ctrl/Cmd
-      if (
-        !evt.ctrlKey &&
-        !evt.metaKey &&
-        cursorContext &&
-        containerRef.current
-      ) {
-        const rect = containerRef.current.getBoundingClientRect();
-        const { x: imageX, y: imageY } = getImageCoordinates(
-          evt.clientX,
-          evt.clientY,
-        );
-
-        const newSize = Math.max(
-          1,
-          currentCursorSize + (evt.deltaY > 0 ? 1 : -1),
-        );
-        setCursorSize(newSize);
-        onCursorSizeChange?.(newSize);
-
-        cursorContext.clearRect(0, 0, size.x, size.y);
-        cursorContext.beginPath();
-        cursorContext.fillStyle = maskColor;
-        cursorContext.strokeStyle = maskColor;
-        cursorContext.globalAlpha = maskOpacity + 0.1; // Slightly increase opacity for cursor
-        cursorContext.arc(imageX, imageY, newSize, 0, 360);
-        cursorContext.fill();
-        cursorContext.stroke();
-
-        evt.stopPropagation();
-        evt.preventDefault();
-      }
-    };
-
-    // Replace previous mousemove listener
-    const cursorCanvas = cursorCanvasRef.current;
-    if (cursorCanvas) {
-      cursorCanvas.addEventListener('mousemove', listener);
-      if (onCursorSizeChange) {
-        cursorCanvas.addEventListener('wheel', scrollListener, {
-          passive: false,
-        });
-      }
-    }
-
-    return () => {
-      if (cursorCanvas) {
-        cursorCanvas.removeEventListener('mousemove', listener);
-        if (onCursorSizeChange) {
-          cursorCanvas.removeEventListener('wheel', scrollListener);
-        }
-      }
-    };
-  }, [
-    cursorContext,
-    maskContext,
-    currentCursorSize,
-    maskColor,
-    size,
-    scale,
-    transform,
-    getImageCoordinates,
-    onCursorSizeChange,
-    maskOpacity,
-  ]);
-
-  // Handle zoom with mouse wheel
-  React.useEffect(() => {
-    if (!enableWheelZoom || !containerRef.current) return;
-
-    const container = containerRef.current;
-
-    const handleWheel = (e: WheelEvent) => {
-      // Only zoom when Ctrl/Cmd key is pressed
-      if (!e.ctrlKey && !e.metaKey) return;
-
-      e.preventDefault();
-
-      // Get mouse position relative to container
-      const rect = container.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
-      const mouseY = e.clientY - rect.top;
-
-      // Calculate zoom delta (smaller steps for smoother zoom)
-      const delta = -e.deltaY * 0.01;
-      const newScale = Math.max(minScale, Math.min(maxScale, scale + delta));
-
-      if (newScale !== scale) {
-        // Corregir el cálculo para centrar el zoom en el cursor
-        // 1. Convertir posición del mouse a coordenadas de imagen actual
-        const mouseXInImage = mouseX / scale;
-        const mouseYInImage = mouseY / scale;
-
-        // 2. Calcular la nueva posición del mouse después del zoom
-        const newMouseXInImage = mouseX / newScale;
-        const newMouseYInImage = mouseY / newScale;
-
-        // 3. Calcular la diferencia necesaria para mantener el punto bajo el cursor
-        const translateX =
-          transform.translateX + (newMouseXInImage - mouseXInImage);
-        const translateY =
-          transform.translateY + (newMouseYInImage - mouseYInImage);
-
-        setScale(newScale);
-        setTransform({
-          scale: newScale,
-          translateX,
-          translateY,
-        });
-
-        // Notify parent component about scale change
-        onScaleChange?.(newScale);
-      }
-    };
-
-    container.addEventListener('wheel', handleWheel, { passive: false });
-
-    return () => {
-      container.removeEventListener('wheel', handleWheel);
-    };
-  }, [scale, transform, minScale, maxScale, enableWheelZoom, onScaleChange]);
-
-  // Replace mask color
+  // Mask color replacement
   const replaceMaskColor = React.useCallback(
     (hexColor: string, invert: boolean) => {
       if (!maskContext) return;
@@ -580,6 +953,9 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
 
+      // Don't start drawing if we're in panning mode
+      if (isPanning || isSpaceKeyDown) return;
+
       // Get the transformed coordinates
       const { x, y } = getImageCoordinates(e.clientX, e.clientY);
 
@@ -593,8 +969,16 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       setIsDrawing(true);
     },
-    [getImageCoordinates, maskContext, currentCursorSize, maskColor],
+    [
+      getImageCoordinates,
+      maskContext,
+      currentCursorSize,
+      maskColor,
+      isPanning,
+      isSpaceKeyDown,
+    ],
   );
+
   const handleMouseUp = React.useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
@@ -730,5 +1114,10 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     transform,
     containerRef,
     resetZoom,
+    isPanning,
+    isZoomKeyDown,
+    setPan,
+    baseScale,
+    effectiveScale,
   };
 }

@@ -32,6 +32,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
     transform,
     containerRef,
     resetZoom,
+    isPanning,
+    isZoomKeyDown,
+    setPan,
+    baseScale,
+    effectiveScale,
   } = useMaskEditor(hookProps);
 
   // Expose API via ref if provided
@@ -42,18 +47,31 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
       undo,
       redo,
       clear,
-      resetZoom, // Expose the reset zoom function through the ref
+      resetZoom,
+      setPan,
     }),
-    [maskCanvasRef, undo, redo, clear, resetZoom],
+    [maskCanvasRef, undo, redo, clear, resetZoom, setPan],
   );
 
-  // Construct transform style for zoom and pan
   const transformStyle = React.useMemo(() => {
     return {
-      transform: `scale(${transform.scale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
+      transform: `scale(${effectiveScale}) translate(${transform.translateX}px, ${transform.translateY}px)`,
       transformOrigin: '0 0',
+      transition: 'transform 0.15s ease-out',
     };
-  }, [transform]);
+  }, [transform, effectiveScale]);
+
+  // Determine the appropriate cursor based on current state
+  const containerCursorStyle = React.useMemo(() => {
+    if (isPanning) {
+      return 'grabbing';
+    } else if (isZoomKeyDown) {
+      return 'zoom-in'; // CSS cursor for zoom
+    } else if (scale > 1) {
+      return 'grab';
+    }
+    return 'default';
+  }, [isPanning, scale, isZoomKeyDown]);
 
   return (
     <div className="react-mask-editor-outer">
@@ -61,12 +79,18 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
         className="react-mask-editor-inner"
         ref={containerRef}
         style={{
-          width: size.x,
-          height: size.y,
-          overflow: 'hidden', // Contain zoomed content
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
+          cursor: containerCursorStyle,
+          position: 'relative',
         }}
       >
-        <div className="all-canvases" style={transformStyle}>
+        <div
+          className="all-canvases"
+          style={transformStyle}
+          data-size={`${size.x}x${size.y}`}
+        >
           <canvas
             key={key}
             ref={canvasRef}
@@ -99,6 +123,7 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
             style={{
               width: size.x,
               height: size.y,
+              cursor: isPanning ? 'grabbing' : 'default',
             }}
             className="react-mask-editor-cursor-canvas"
           />

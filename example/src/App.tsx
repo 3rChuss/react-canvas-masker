@@ -17,6 +17,8 @@ function App() {
   const [size, setSize] = React.useState(20);
   const [color, setColor] = React.useState('#c3c3c3');
   const [scale, setScale] = React.useState(1);
+  const [panPosition, setPanPosition] = React.useState({ x: 0, y: 0 });
+  console.log('Mask:', mask);
 
   return (
     <>
@@ -64,6 +66,10 @@ function App() {
             />
             <span style={{ marginLeft: 8 }}>{Math.round(scale * 100)}%</span>
           </label>
+          <div style={{ marginLeft: 16 }}>
+            Pan Position: X: {Math.round(panPosition.x)} Y:{' '}
+            {Math.round(panPosition.y)}
+          </div>
         </div>
         <div
           style={{
@@ -77,14 +83,9 @@ function App() {
           <div
             style={{
               position: 'relative',
-              width: '80%',
+              width: '100%',
               height: '400px',
               border: '1px solid #ccc',
-              overflow: 'hidden',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              marginBottom: 16,
             }}
           >
             <MaskEditor
@@ -104,6 +105,8 @@ function App() {
               maxScale={4}
               onScaleChange={setScale}
               enableWheelZoom={true}
+              constrainPan={true}
+              onPanChange={(x, y) => setPanPosition({ x, y })}
             />
           </div>
         </div>
@@ -132,14 +135,17 @@ function App() {
           >
             Reset Zoom
           </button>
+          <button
+            onClick={() => {
+              if (canvas.current?.setPan) {
+                canvas.current.setPan(0, 0);
+              }
+            }}
+          >
+            Center View
+          </button>
         </div>
-        <div style={{ marginTop: 16 }}>
-          <img
-            src={mask}
-            alt="mask preview"
-            style={{ border: '1px solid #ccc' }}
-          />
-        </div>
+        <div style={{ marginTop: 16 }}></div>
       </div>
       <div style={{ padding: 32 }}>
         <MaskEditorProviderExample />
