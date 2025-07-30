@@ -22,9 +22,9 @@ It’s built as an enhanced fork of [`react-mask-editor`](https://www.npmjs.com/
 - ✅ Draw 1-bit (black/white) masks over any image using a brush tool
 - 🔁 Undo/redo and clear support
 - 🎨 Customizable brush: size, color, opacity, blend mode
-- � Zoom and pan capabilities for precise mask editing
+- 🔍 Zoom and pan capabilities for precise mask editing
 - 🖱️ Intuitive controls: mouse wheel zoom, space+drag panning
-- �💡 Use as a component, hook, or via React context
+- 📦 Use as a component, hook, or via React context
 - ⚡ Imperative API via `ref`
 - 📱 Responsive design that adapts to container size
 - 🧪 Local demo/example app included
