@@ -358,78 +358,233 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     }
   }, [cursorCanvasRef, cursorContext]);
 
-  // Function to prepare and apply image size
+  // Function to prepare and apply image size with enhanced error handling and diagnostics
   const prepareAndApplyImage = React.useCallback(
     (img: HTMLImageElement) => {
       console.log(
-        'Preparing image with dimensions:',
+        '[MaskEditor] Preparing image with dimensions:',
         img.width,
         'x',
         img.height,
+        'Natural dimensions:',
+        img.naturalWidth,
+        'x',
+        img.naturalHeight,
       );
 
-      // Validate image dimensions
-      if (img.width === 0 || img.height === 0) {
-        console.error('Invalid image dimensions:', img.width, 'x', img.height);
-        return;
+      // Validate image dimensions with better error handling
+      if (
+        img.width === 0 ||
+        img.height === 0 ||
+        img.naturalWidth === 0 ||
+        img.naturalHeight === 0
+      ) {
+        console.error(
+          '[MaskEditor] Invalid image dimensions:',
+          'width:',
+          img.width,
+          'height:',
+          img.height,
+          'naturalWidth:',
+          img.naturalWidth,
+          'naturalHeight:',
+          img.naturalHeight,
+        );
+
+        // Try to recover using naturalWidth/naturalHeight if available
+        if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+          console.log('[MaskEditor] Using naturalWidth/naturalHeight instead');
+          img.width = img.naturalWidth;
+          img.height = img.naturalHeight;
+        } else {
+          console.error(
+            '[MaskEditor] Cannot recover from zero dimensions, using fallback size',
+          );
+          // Set fallback size to make component visible even with error
+          setSize({ x: 300, y: 200 });
+          return;
+        }
       }
 
-      // Calculate dimensions
-      let targetWidth = img.width;
-      let targetHeight = img.height;
-      if (img.width > maxWidth || img.height > maxHeight) {
-        const widthRatio = maxWidth / img.width;
-        const heightRatio = maxHeight / img.height;
+      // Calculate dimensions with safety checks
+      let targetWidth = img.width || img.naturalWidth;
+      let targetHeight = img.height || img.naturalHeight;
+
+      if (targetWidth > maxWidth || targetHeight > maxHeight) {
+        const widthRatio = maxWidth / targetWidth;
+        const heightRatio = maxHeight / targetHeight;
         const ratio = Math.min(widthRatio, heightRatio);
-        targetWidth = Math.round(img.width * ratio);
-        targetHeight = Math.round(img.height * ratio);
+        targetWidth = Math.round(targetWidth * ratio);
+        targetHeight = Math.round(targetHeight * ratio);
         console.log(
-          'Resizing image to fit within max dimensions:',
+          '[MaskEditor] Resizing image to fit within max dimensions:',
           targetWidth,
           'x',
           targetHeight,
         );
       }
 
+      // Ensure minimum dimensions for visibility
+      targetWidth = Math.max(targetWidth, 50);
+      targetHeight = Math.max(targetHeight, 50);
+
       // Set size state and update canvases
       setSize({ x: targetWidth, y: targetHeight });
-      console.log('Setting canvas size to:', targetWidth, 'x', targetHeight);
+      console.log(
+        '[MaskEditor] Setting canvas size to:',
+        targetWidth,
+        'x',
+        targetHeight,
+      );
 
-      // Apply dimensions to all canvases
+      // Apply dimensions to all canvases with verification
       [canvasRef, maskCanvasRef, cursorCanvasRef].forEach((ref) => {
         if (ref.current) {
           ref.current.width = targetWidth;
           ref.current.height = targetHeight;
+
+          // Verify canvas dimensions were set correctly
+          if (
+            ref.current.width !== targetWidth ||
+            ref.current.height !== targetHeight
+          ) {
+            console.warn(
+              '[MaskEditor] Canvas dimensions were not set correctly:',
+              'Expected:',
+              targetWidth,
+              'x',
+              targetHeight,
+              'Actual:',
+              ref.current.width,
+              'x',
+              ref.current.height,
+            );
+          }
+        } else {
+          console.warn(
+            '[MaskEditor] Canvas ref is null, cannot set dimensions',
+          );
         }
       });
 
-      // Draw image on main canvas
-      setTimeout(() => {
-        try {
-          const ctx = canvasRef.current?.getContext('2d', {
-            willReadFrequently: true,
-          });
-          if (ctx) {
-            ctx.clearRect(0, 0, targetWidth, targetHeight);
+      // Draw image on main canvas with more diagnostic info and multiple attempts if needed
+      let attemptCount = 0;
+      const maxAttempts = 3;
 
-            // Handle potential issues with image drawing
-            try {
-              ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-              console.log('Image drawn successfully on canvas');
-            } catch (drawError) {
-              console.error('Error drawing image on canvas:', drawError);
-              // Attempt to diagnose the issue
-              if (img.complete) {
-                console.log('Image is complete but may have loading issues');
-              } else {
-                console.log('Image is not fully loaded');
+      const attemptDraw = () => {
+        attemptCount++;
+        console.log(
+          `[MaskEditor] Drawing attempt ${attemptCount}/${maxAttempts}`,
+        );
+
+        try {
+          if (!canvasRef.current) {
+            console.error('[MaskEditor] Canvas ref is null during draw');
+            return;
+          }
+
+          const ctx = canvasRef.current.getContext('2d', {
+            willReadFrequently: true,
+            alpha: true, // Ensure alpha channel support
+          });
+
+          if (!ctx) {
+            console.error('[MaskEditor] Failed to get canvas context');
+            return;
+          }
+
+          // Clear canvas first with visible color to see if it's working
+          ctx.fillStyle = '#f8f8f8'; // Light gray
+          ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+          // Check if canvas was drawn to
+          const testData = ctx.getImageData(0, 0, 1, 1);
+          console.log(
+            '[MaskEditor] Canvas drawing test:',
+            testData.data[0] !== 0 ||
+              testData.data[1] !== 0 ||
+              testData.data[2] !== 0 ||
+              testData.data[3] !== 0
+              ? 'Success'
+              : 'Failed',
+          );
+
+          // Draw a border to help visualize canvas boundaries
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1;
+          ctx.strokeRect(0, 0, targetWidth, targetHeight);
+
+          // Handle potential issues with image drawing
+          try {
+            // Draw with verification
+            ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+            // Verify drawing worked by checking pixel data
+            const imageData = ctx.getImageData(
+              Math.floor(targetWidth / 2),
+              Math.floor(targetHeight / 2),
+              1,
+              1,
+            );
+            const hasData = imageData.data[3] > 0; // Check alpha channel
+
+            console.log(
+              '[MaskEditor] Image drawn on canvas:',
+              hasData
+                ? 'Success'
+                : 'Possible issue - transparent pixels detected',
+            );
+
+            // If drawing might have failed, try again with a delay unless max attempts reached
+            if (!hasData && attemptCount < maxAttempts) {
+              console.log('[MaskEditor] Retrying draw with delay...');
+              setTimeout(attemptDraw, 100 * attemptCount); // Increasing delay
+              return;
+            }
+          } catch (drawError) {
+            console.error(
+              '[MaskEditor] Error drawing image on canvas:',
+              drawError,
+            );
+
+            // Attempt to diagnose the issue with detailed information
+            if (img.complete) {
+              console.log(
+                '[MaskEditor] Image is complete but may have loading issues',
+              );
+              console.log('[MaskEditor] Image properties:', {
+                src: img.src.substring(0, 30) + '...',
+                crossOrigin: img.crossOrigin,
+                width: img.width,
+                height: img.height,
+                naturalWidth: img.naturalWidth,
+                naturalHeight: img.naturalHeight,
+                complete: img.complete,
+              });
+
+              // Try again with a delay if we haven't exceeded max attempts
+              if (attemptCount < maxAttempts) {
+                console.log('[MaskEditor] Retrying after draw error...');
+                setTimeout(attemptDraw, 200 * attemptCount); // Increasing delay
+              }
+            } else {
+              console.log('[MaskEditor] Image is not fully loaded, waiting...');
+              // If image is not complete, wait for it
+              if (attemptCount < maxAttempts) {
+                setTimeout(attemptDraw, 500); // Longer delay for incomplete image
               }
             }
           }
         } catch (contextError) {
-          console.error('Error getting canvas context:', contextError);
+          console.error(
+            '[MaskEditor] Error getting canvas context:',
+            contextError,
+          );
         }
-      }, 0);
+      };
+
+      // Start drawing process with a small delay to ensure DOM updates
+      setTimeout(attemptDraw, 50);
 
       // Force re-render to update canvas
       setKey((prev) => prev + 1);
@@ -441,53 +596,134 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   React.useEffect(() => {
     const loadImage = async () => {
       if (!src) {
-        console.error('No source provided for image');
+        console.error('[MaskEditor] No source provided for image');
         return;
       }
 
-      // Create image element
+      console.log(
+        '[MaskEditor] Starting to load image from:',
+        src.substring(0, 50) + (src.length > 50 ? '...' : ''),
+      );
+
+      // Create image element with better diagnostics
       const img = new window.Image();
 
-      // Always set crossOrigin for remote images to avoid tainted canvas issues
-      if (src.startsWith('http')) {
-        img.crossOrigin = crossOrigin || 'anonymous';
-      }
+      // Track loading state
+      let isLoading = true;
+      const loadTimeout = setTimeout(() => {
+        if (isLoading) {
+          console.warn(
+            '[MaskEditor] Image loading taking longer than expected:',
+            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
+          );
+        }
+      }, 5000); // 5 second timeout warning
 
-      // Set up onload and error handlers
+      // Always set crossOrigin for all images to avoid tainted canvas issues
+      // Many image services require this even for same-origin images
+      img.crossOrigin = crossOrigin || 'anonymous';
+
+      // Set up onload and error handlers with enhanced diagnostics
       img.onload = () => {
-        console.log('Image loaded successfully:', img.width, 'x', img.height);
-        prepareAndApplyImage(img);
+        isLoading = false;
+        clearTimeout(loadTimeout);
+
+        console.log(
+          '[MaskEditor] Image loaded successfully:',
+          img.width,
+          'x',
+          img.height,
+        );
+        console.log(
+          '[MaskEditor] Image complete:',
+          img.complete,
+          'Natural size:',
+          img.naturalWidth,
+          'x',
+          img.naturalHeight,
+        );
+
+        // Short delay to ensure image is fully processed before drawing
+        setTimeout(() => {
+          prepareAndApplyImage(img);
+        }, 50);
       };
 
       img.onerror = (error) => {
-        console.error('Error loading image:', error);
-        console.error('Image source that failed:', src);
+        isLoading = false;
+        clearTimeout(loadTimeout);
+
+        console.error('[MaskEditor] Error loading image:', error);
+        console.error('[MaskEditor] Image source that failed:', src);
+
+        // Additional diagnostics
+        if (src.startsWith('http')) {
+          console.log(
+            '[MaskEditor] This appears to be a remote URL. CORS issues could be preventing the image from loading.',
+          );
+          console.log(
+            '[MaskEditor] Make sure the server allows CORS with: Access-Control-Allow-Origin header',
+          );
+        } else if (src.startsWith('data:')) {
+          console.log(
+            "[MaskEditor] This appears to be a data URL. Verify it's not corrupted or too large.",
+          );
+        } else {
+          console.log(
+            '[MaskEditor] This appears to be a local path. Verify the path is correct and accessible.',
+          );
+        }
+
+        // Set a minimal size to make the container visible
+        setSize({ x: 300, y: 200 });
       };
 
-      // Try to load image with fetch first for remote URLs (to handle CORS)
-      if (src.startsWith('http')) {
-        try {
-          console.log('Fetching image via fetch API:', src);
-          const base64Src = await fetchImageAsBase64(src);
-          img.src = base64Src;
-        } catch (error) {
-          console.error(
-            'Error loading image with fetch, falling back to direct load:',
-            error,
+      // Try different loading strategies for different source types
+      try {
+        if (src.startsWith('http')) {
+          console.log(
+            '[MaskEditor] Using fetch API for remote image:',
+            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
+          );
+
+          try {
+            const base64Src = await fetchImageAsBase64(src);
+            console.log(
+              '[MaskEditor] Successfully fetched image as base64, now loading into Image object',
+            );
+            img.src = base64Src;
+          } catch (fetchError) {
+            console.error(
+              '[MaskEditor] Failed to fetch image via fetch API, falling back to direct load:',
+              fetchError,
+            );
+            img.src = src;
+          }
+        } else if (src.startsWith('data:')) {
+          console.log('[MaskEditor] Loading data URL directly');
+          img.src = src;
+        } else {
+          console.log(
+            '[MaskEditor] Loading local image path:',
+            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
           );
           img.src = src;
         }
-      } else {
-        // For local or data URLs, load directly
-        console.log(
-          'Loading image directly:',
-          src.substring(0, 50) + (src.length > 50 ? '...' : ''),
+      } catch (error) {
+        console.error(
+          '[MaskEditor] Unexpected error during image load initialization:',
+          error,
         );
-        img.src = src;
+        setSize({ x: 300, y: 200 }); // Set fallback size
       }
     };
 
     loadImage();
+
+    // Return cleanup function
+    return () => {
+      console.log('[MaskEditor] Cleaning up image loading effect');
+    };
   }, [src, crossOrigin, prepareAndApplyImage]);
 
   React.useEffect(() => {

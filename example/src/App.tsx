@@ -6,7 +6,7 @@ import * as React from 'react';
 // } from 'react-canvas-masker';
 import { MaskEditor, toMask, type MaskEditorCanvasRef } from '../../src/index';
 import 'react-canvas-masker/dist/style.css';
-import './App.css';
+// import './App.css';
 import MaskEditorProviderExample from './MaskEditorProviderExample';
 
 function App() {
@@ -106,8 +106,8 @@ function App() {
               scale={scale}
               maxScale={4}
               onScaleChange={setScale}
-              enableWheelZoom={true}
-              constrainPan={true}
+              enableWheelZoom
+              constrainPan
               onPanChange={(x, y) => setPanPosition({ x, y })}
             />
           </div>

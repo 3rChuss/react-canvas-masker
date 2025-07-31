@@ -78,11 +78,13 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
       return 'grabbing';
     } else if (isZoomKeyDown) {
       return 'zoom-in'; // CSS cursor for zoom
-    } else if (scale > 1) {
+    } else if (scale > 1 && isPanning) {
       return 'grab';
     }
     return 'default';
   }, [isPanning, scale, isZoomKeyDown]);
+
+  console.log(containerCursorStyle);
 
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.code === 'Space') {
@@ -90,9 +92,16 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
     }
   }, []);
 
+  // Add a debug ID to see if component rendered when image is missing
+  const uniqueId = React.useMemo(
+    () => Math.random().toString(36).substring(2, 9),
+    [],
+  );
+
   return (
     <div
       className="react-mask-editor-outer"
+      data-mask-editor-id={uniqueId}
       style={{
         maxWidth: `${maxWidth}px`,
         maxHeight: `${maxHeight}px`,
@@ -110,11 +119,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
           width: '100%',
           height: '100%',
           overflow: 'hidden',
-          cursor: containerCursorStyle,
+
           position: 'relative',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
+          background: '#f0f0f0', // Add background to make it visible even without image
         }}
       >
         <div
@@ -129,13 +139,38 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
             overflow: 'hidden',
           }}
         >
-          <div className="all-canvases" style={transformStyle}>
+          {/* Debug indicator to show component is mounted */}
+          {!size.x && !size.y && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 10,
+                left: 10,
+                color: '#ff0000',
+                fontSize: '12px',
+              }}
+            >
+              Loading image... (ID: {uniqueId})
+            </div>
+          )}
+          <div
+            className="all-canvases"
+            style={{
+              ...transformStyle,
+              // Add debug border to help see if canvas container is sized correctly
+              outline:
+                process.env.NODE_ENV !== 'production'
+                  ? '1px dashed rgba(0,0,255,0.3)'
+                  : 'none',
+            }}
+          >
             <canvas
               key={key}
               ref={canvasRef}
               style={{
                 width: size.x,
                 height: size.y,
+                display: 'block', // Ensure proper display
               }}
               width={size.x}
               height={size.y}
@@ -150,6 +185,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
                 height: size.y,
                 opacity: maskOpacity,
                 mixBlendMode: maskBlendMode as any,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                pointerEvents: 'none',
               }}
               className="react-mask-editor-mask-canvas"
             />
@@ -162,7 +201,11 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
               style={{
                 width: size.x,
                 height: size.y,
-                cursor: isPanning ? 'grabbing' : 'default',
+                cursor: containerCursorStyle,
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                zIndex: 200, // Ensure cursor layer is on top
               }}
               className="react-mask-editor-cursor-canvas"
             />
