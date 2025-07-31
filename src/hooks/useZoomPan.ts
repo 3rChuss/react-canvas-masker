@@ -134,7 +134,7 @@ export function useZoomPan(
 
       return { x, y };
     },
-    [transform, baseScale, containerRef],
+    [transform.scale, transform.translateX, transform.translateY, baseScale, containerRef],
   );
 
   // Function to calculate base scale
