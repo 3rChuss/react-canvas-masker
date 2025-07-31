@@ -405,7 +405,7 @@ export function useZoomPan(
         return newTransform;
       });
     },
-    [constrainPan, onPanChange, contentSize, containerRef], // Removed transform.scale from dependencies
+    [constrainPan, onPanChange, contentSize, containerRef, transform.scale], // Added transform.scale to dependencies
   );
 
   // Blur handler
