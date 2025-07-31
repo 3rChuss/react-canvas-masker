@@ -540,7 +540,7 @@ export function useZoomPan(
     if (transform.scale <= 1) {
       setPan(0, 0);
     }
-  }, [transform.scale]);
+  }, [transform.scale, setPan]);
 
   return [
     {
