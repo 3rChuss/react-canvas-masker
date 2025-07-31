@@ -80,9 +80,20 @@ export function useZoomPan(
   });
 
   // Effective scale (combined)
+  const baseScaleRef = React.useRef(baseScale);
+  const scaleRef = React.useRef(scale);
+
+  React.useEffect(() => {
+    baseScaleRef.current = baseScale;
+  }, [baseScale]);
+
+  React.useEffect(() => {
+    scaleRef.current = scale;
+  }, [scale]);
+
   const effectiveScale = React.useMemo(
-    () => baseScale * scale,
-    [baseScale, scale],
+    () => baseScaleRef.current * scaleRef.current,
+    [baseScaleRef.current, scaleRef.current],
   );
 
   // Function to calculate image coordinates from client coordinates
