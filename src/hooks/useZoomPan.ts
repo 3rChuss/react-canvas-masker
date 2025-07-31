@@ -363,8 +363,8 @@ export function useZoomPan(
         let constrainedY = y;
 
         if (constrainPan && containerRef.current) {
-          const maxPanX = contentSize.x * 0.75; // Permitir movimiento hasta 75% del ancho
-          const maxPanY = contentSize.y * 0.75; // Permitir movimiento hasta 75% del alto
+          const maxPanX = contentSize.x * 0.75; // Allow movement up to 75% of width
+          const maxPanY = contentSize.y * 0.75; // Allow movement up to 75% of height
 
           constrainedX = Math.max(Math.min(x, maxPanX), -maxPanX);
           constrainedY = Math.max(Math.min(y, maxPanY), -maxPanY);
