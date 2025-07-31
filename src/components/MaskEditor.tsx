@@ -77,14 +77,12 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
     if (isPanning) {
       return 'grabbing';
     } else if (isZoomKeyDown) {
-      return 'zoom-in'; // CSS cursor for zoom
+      return 'zoom-in';
     } else if (scale > 1 && isPanning) {
       return 'grab';
     }
     return 'default';
   }, [isPanning, scale, isZoomKeyDown]);
-
-  console.log(containerCursorStyle);
 
   const handleKeyDown = React.useCallback((e: React.KeyboardEvent) => {
     if (e.code === 'Space') {
@@ -139,29 +137,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
             overflow: 'hidden',
           }}
         >
-          {/* Debug indicator to show component is mounted */}
-          {!size.x && !size.y && (
-            <div
-              style={{
-                position: 'absolute',
-                top: 10,
-                left: 10,
-                color: '#ff0000',
-                fontSize: '12px',
-              }}
-            >
-              Loading image... (ID: {uniqueId})
-            </div>
-          )}
           <div
             className="all-canvases"
             style={{
               ...transformStyle,
-              // Add debug border to help see if canvas container is sized correctly
-              outline:
-                process.env.NODE_ENV !== 'production'
-                  ? '1px dashed rgba(0,0,255,0.3)'
-                  : 'none',
             }}
           >
             <canvas

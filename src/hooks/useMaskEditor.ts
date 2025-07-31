@@ -361,17 +361,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   // Function to prepare and apply image size with enhanced error handling and diagnostics
   const prepareAndApplyImage = React.useCallback(
     (img: HTMLImageElement) => {
-      console.log(
-        '[MaskEditor] Preparing image with dimensions:',
-        img.width,
-        'x',
-        img.height,
-        'Natural dimensions:',
-        img.naturalWidth,
-        'x',
-        img.naturalHeight,
-      );
-
       // Validate image dimensions with better error handling
       if (
         img.width === 0 ||
@@ -379,27 +368,11 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         img.naturalWidth === 0 ||
         img.naturalHeight === 0
       ) {
-        console.error(
-          '[MaskEditor] Invalid image dimensions:',
-          'width:',
-          img.width,
-          'height:',
-          img.height,
-          'naturalWidth:',
-          img.naturalWidth,
-          'naturalHeight:',
-          img.naturalHeight,
-        );
-
         // Try to recover using naturalWidth/naturalHeight if available
         if (img.naturalWidth > 0 && img.naturalHeight > 0) {
-          console.log('[MaskEditor] Using naturalWidth/naturalHeight instead');
           img.width = img.naturalWidth;
           img.height = img.naturalHeight;
         } else {
-          console.error(
-            '[MaskEditor] Cannot recover from zero dimensions, using fallback size',
-          );
           // Set fallback size to make component visible even with error
           setSize({ x: 300, y: 200 });
           return;
@@ -416,12 +389,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         const ratio = Math.min(widthRatio, heightRatio);
         targetWidth = Math.round(targetWidth * ratio);
         targetHeight = Math.round(targetHeight * ratio);
-        console.log(
-          '[MaskEditor] Resizing image to fit within max dimensions:',
-          targetWidth,
-          'x',
-          targetHeight,
-        );
       }
 
       // Ensure minimum dimensions for visibility
@@ -430,40 +397,12 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       // Set size state and update canvases
       setSize({ x: targetWidth, y: targetHeight });
-      console.log(
-        '[MaskEditor] Setting canvas size to:',
-        targetWidth,
-        'x',
-        targetHeight,
-      );
 
       // Apply dimensions to all canvases with verification
       [canvasRef, maskCanvasRef, cursorCanvasRef].forEach((ref) => {
         if (ref.current) {
           ref.current.width = targetWidth;
           ref.current.height = targetHeight;
-
-          // Verify canvas dimensions were set correctly
-          if (
-            ref.current.width !== targetWidth ||
-            ref.current.height !== targetHeight
-          ) {
-            console.warn(
-              '[MaskEditor] Canvas dimensions were not set correctly:',
-              'Expected:',
-              targetWidth,
-              'x',
-              targetHeight,
-              'Actual:',
-              ref.current.width,
-              'x',
-              ref.current.height,
-            );
-          }
-        } else {
-          console.warn(
-            '[MaskEditor] Canvas ref is null, cannot set dimensions',
-          );
         }
       });
 
@@ -473,9 +412,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       const attemptDraw = () => {
         attemptCount++;
-        console.log(
-          `[MaskEditor] Drawing attempt ${attemptCount}/${maxAttempts}`,
-        );
 
         try {
           if (!canvasRef.current) {
@@ -497,18 +433,6 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
           ctx.fillStyle = '#f8f8f8'; // Light gray
           ctx.fillRect(0, 0, targetWidth, targetHeight);
 
-          // Check if canvas was drawn to
-          const testData = ctx.getImageData(0, 0, 1, 1);
-          console.log(
-            '[MaskEditor] Canvas drawing test:',
-            testData.data[0] !== 0 ||
-              testData.data[1] !== 0 ||
-              testData.data[2] !== 0 ||
-              testData.data[3] !== 0
-              ? 'Success'
-              : 'Failed',
-          );
-
           // Draw a border to help visualize canvas boundaries
           ctx.strokeStyle = '#000000';
           ctx.lineWidth = 1;
@@ -528,16 +452,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             );
             const hasData = imageData.data[3] > 0; // Check alpha channel
 
-            console.log(
-              '[MaskEditor] Image drawn on canvas:',
-              hasData
-                ? 'Success'
-                : 'Possible issue - transparent pixels detected',
-            );
-
             // If drawing might have failed, try again with a delay unless max attempts reached
             if (!hasData && attemptCount < maxAttempts) {
-              console.log('[MaskEditor] Retrying draw with delay...');
               setTimeout(attemptDraw, 100 * attemptCount); // Increasing delay
               return;
             }
@@ -549,26 +465,11 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
             // Attempt to diagnose the issue with detailed information
             if (img.complete) {
-              console.log(
-                '[MaskEditor] Image is complete but may have loading issues',
-              );
-              console.log('[MaskEditor] Image properties:', {
-                src: img.src.substring(0, 30) + '...',
-                crossOrigin: img.crossOrigin,
-                width: img.width,
-                height: img.height,
-                naturalWidth: img.naturalWidth,
-                naturalHeight: img.naturalHeight,
-                complete: img.complete,
-              });
-
               // Try again with a delay if we haven't exceeded max attempts
               if (attemptCount < maxAttempts) {
-                console.log('[MaskEditor] Retrying after draw error...');
                 setTimeout(attemptDraw, 200 * attemptCount); // Increasing delay
               }
             } else {
-              console.log('[MaskEditor] Image is not fully loaded, waiting...');
               // If image is not complete, wait for it
               if (attemptCount < maxAttempts) {
                 setTimeout(attemptDraw, 500); // Longer delay for incomplete image
@@ -600,24 +501,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
         return;
       }
 
-      console.log(
-        '[MaskEditor] Starting to load image from:',
-        src.substring(0, 50) + (src.length > 50 ? '...' : ''),
-      );
-
       // Create image element with better diagnostics
       const img = new window.Image();
-
-      // Track loading state
-      let isLoading = true;
-      const loadTimeout = setTimeout(() => {
-        if (isLoading) {
-          console.warn(
-            '[MaskEditor] Image loading taking longer than expected:',
-            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
-          );
-        }
-      }, 5000); // 5 second timeout warning
 
       // Always set crossOrigin for all images to avoid tainted canvas issues
       // Many image services require this even for same-origin images
@@ -625,37 +510,13 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
       // Set up onload and error handlers with enhanced diagnostics
       img.onload = () => {
-        isLoading = false;
-        clearTimeout(loadTimeout);
-
-        console.log(
-          '[MaskEditor] Image loaded successfully:',
-          img.width,
-          'x',
-          img.height,
-        );
-        console.log(
-          '[MaskEditor] Image complete:',
-          img.complete,
-          'Natural size:',
-          img.naturalWidth,
-          'x',
-          img.naturalHeight,
-        );
-
         // Short delay to ensure image is fully processed before drawing
         setTimeout(() => {
           prepareAndApplyImage(img);
         }, 50);
       };
 
-      img.onerror = (error) => {
-        isLoading = false;
-        clearTimeout(loadTimeout);
-
-        console.error('[MaskEditor] Error loading image:', error);
-        console.error('[MaskEditor] Image source that failed:', src);
-
+      img.onerror = () => {
         // Additional diagnostics
         if (src.startsWith('http')) {
           console.log(
@@ -681,16 +542,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       // Try different loading strategies for different source types
       try {
         if (src.startsWith('http')) {
-          console.log(
-            '[MaskEditor] Using fetch API for remote image:',
-            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
-          );
-
           try {
             const base64Src = await fetchImageAsBase64(src);
-            console.log(
-              '[MaskEditor] Successfully fetched image as base64, now loading into Image object',
-            );
             img.src = base64Src;
           } catch (fetchError) {
             console.error(
@@ -700,13 +553,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             img.src = src;
           }
         } else if (src.startsWith('data:')) {
-          console.log('[MaskEditor] Loading data URL directly');
           img.src = src;
         } else {
-          console.log(
-            '[MaskEditor] Loading local image path:',
-            src.substring(0, 50) + (src.length > 50 ? '...' : ''),
-          );
           img.src = src;
         }
       } catch (error) {
@@ -721,9 +569,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     loadImage();
 
     // Return cleanup function
-    return () => {
-      console.log('[MaskEditor] Cleaning up image loading effect');
-    };
+    return () => {};
   }, [src, crossOrigin, prepareAndApplyImage]);
 
   React.useEffect(() => {
