@@ -614,7 +614,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       if (zoomPanState.isPanning || zoomPanState.isSpaceKeyDown) return;
 
       // Get the transformed coordinates
-      const { x, y } = zoomPanActions.getImageCoordinates(e.clientX, e.clientY);
+      const { x, y } = zoomPanActions.getImageCoordinates(e.nativeEvent.clientX, e.nativeEvent.clientY);
 
       if (maskContext) {
         maskContext.beginPath();
