@@ -92,7 +92,7 @@ export function useZoomPan(
 
       const rect = containerRef.current.getBoundingClientRect();
 
-      // Obtener dimensiones del contenedor
+      // Get container dimensions
       const containerWidth = rect.width;
       const containerHeight = rect.height;
 
