@@ -126,6 +126,24 @@ function App() {
           <button onClick={() => canvas.current?.clear?.()}>Clear</button>
           <button
             onClick={() => {
+              if (canvas.current?.zoomIn) {
+                canvas.current.zoomIn();
+              }
+            }}
+          >
+            Zoom in
+          </button>
+          <button
+            onClick={() => {
+              if (canvas.current?.zoomOut) {
+                canvas.current.zoomOut();
+              }
+            }}
+          >
+            Zoom out
+          </button>
+          <button
+            onClick={() => {
               // Usar la nueva función resetZoom en lugar de solo setScale
               if (canvas.current?.resetZoom) {
                 canvas.current.resetZoom();

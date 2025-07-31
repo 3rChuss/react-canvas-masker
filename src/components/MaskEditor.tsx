@@ -42,6 +42,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
     isZoomKeyDown,
     setPan,
     effectiveScale,
+    zoomIn,
+    zoomOut,
   } = useMaskEditor(hookProps);
 
   // Expose API via ref if provided
@@ -54,8 +56,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
       clear,
       resetZoom,
       setPan,
+      zoomIn,
+      zoomOut,
     }),
-    [maskCanvasRef, undo, redo, clear, resetZoom, setPan],
+    [maskCanvasRef, undo, redo, clear, resetZoom, setPan, zoomIn, zoomOut],
   );
 
   const transformStyle = React.useMemo(() => {

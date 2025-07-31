@@ -32,6 +32,8 @@ export interface ZoomPanActions {
     clientX: number,
     clientY: number,
   ) => { x: number; y: number };
+  zoomIn: () => void;
+  zoomOut: () => void;
 }
 
 export function useZoomPan(
@@ -302,6 +304,32 @@ export function useZoomPan(
     containerRef,
   ]);
 
+  // Function to zoom in
+  const zoomIn = React.useCallback(() => {
+    const newScale = Math.min(maxScale, scale + 0.1);
+    if (newScale !== scale) {
+      setScale(newScale);
+      setTransform((prev) => ({
+        ...prev,
+        scale: newScale,
+      }));
+      onScaleChange?.(newScale);
+    }
+  }, [scale, maxScale, onScaleChange]);
+
+  // Function to zoom out
+  const zoomOut = React.useCallback(() => {
+    const newScale = Math.max(minScale, scale - 0.1);
+    if (newScale !== scale) {
+      setScale(newScale);
+      setTransform((prev) => ({
+        ...prev,
+        scale: newScale,
+      }));
+      onScaleChange?.(newScale);
+    }
+  }, [scale, minScale, onScaleChange]);
+
   // Improved resetZoom function to always center the content
   const resetZoom = React.useCallback(() => {
     // Reset scale to 1
@@ -518,6 +546,8 @@ export function useZoomPan(
       resetZoom,
       setPan,
       getImageCoordinates,
+      zoomIn,
+      zoomOut,
     },
   ];
 }

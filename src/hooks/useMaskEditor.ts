@@ -87,6 +87,8 @@ export interface MaskEditorCanvasRef {
   clear: () => void;
   resetZoom: () => void;
   setPan: (x: number, y: number) => void;
+  zoomIn: () => void;
+  zoomOut: () => void;
 }
 
 export interface UseMaskEditorReturn {
@@ -121,6 +123,8 @@ export interface UseMaskEditorReturn {
   isZoomKeyDown: boolean;
   setPan: (x: number, y: number) => void;
   effectiveScale: number; // Combine(baseScale * userScale)
+  zoomIn: () => void;
+  zoomOut: () => void;
 }
 
 export const MaskEditorDefaults = {
@@ -718,31 +722,33 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
   return {
     canvasRef,
-    maskCanvasRef,
+    clear,
+    containerRef,
     cursorCanvasRef,
-    size,
-    isDrawing,
-    key,
+    cursorSize: currentCursorSize,
+    effectiveScale: zoomPanState.effectiveScale,
     handleMouseDown,
     handleMouseUp,
-    undo,
-    redo,
-    clear,
-    cursorSize: currentCursorSize,
-    setCursorSize,
-    maskColor,
-    maskOpacity,
-    maskBlendMode,
     history: historyManager.history,
     historyIndex: historyManager.historyIndex,
-    scale: zoomPanState.scale,
-    setScale: zoomPanActions.setScale,
-    transform: zoomPanState.transform,
-    containerRef,
-    resetZoom: zoomPanActions.resetZoom,
+    isDrawing,
     isPanning: zoomPanState.isPanning,
     isZoomKeyDown: zoomPanState.isZoomKeyDown,
+    key,
+    maskBlendMode,
+    maskCanvasRef,
+    maskColor,
+    maskOpacity,
+    redo,
+    resetZoom: zoomPanActions.resetZoom,
+    scale: zoomPanState.scale,
+    setCursorSize,
     setPan: zoomPanActions.setPan,
-    effectiveScale: zoomPanState.effectiveScale,
+    setScale: zoomPanActions.setScale,
+    size,
+    transform: zoomPanState.transform,
+    undo,
+    zoomIn: zoomPanActions.zoomIn,
+    zoomOut: zoomPanActions.zoomOut,
   };
 }
