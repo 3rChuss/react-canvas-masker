@@ -134,7 +134,13 @@ export function useZoomPan(
 
       return { x, y };
     },
-    [transform.scale, transform.translateX, transform.translateY, baseScale, containerRef],
+    [
+      transform.scale,
+      transform.translateX,
+      transform.translateY,
+      baseScale,
+      containerRef,
+    ],
   );
 
   // Function to calculate base scale
@@ -317,29 +323,41 @@ export function useZoomPan(
 
   // Function to zoom in
   const zoomIn = React.useCallback(() => {
-    const newScale = Math.min(maxScale, scale + 0.1);
-    if (newScale !== scale) {
-      setScale(newScale);
-      setTransform((prev) => ({
-        ...prev,
-        scale: newScale,
-      }));
-      onScaleChange?.(newScale);
-    }
-  }, [scale, maxScale, onScaleChange]);
+    setScale((currentScale) => {
+      const newScale = Math.min(maxScale, currentScale + 0.1);
+      if (newScale !== currentScale) {
+        setTimeout(() => {
+          setTransform((prev) => ({
+            ...prev,
+            scale: newScale,
+          }));
+          if (onScaleChange) onScaleChange(newScale);
+        }, 0);
+
+        return newScale;
+      }
+      return currentScale;
+    });
+  }, [maxScale, onScaleChange, setTransform]);
 
   // Function to zoom out
   const zoomOut = React.useCallback(() => {
-    const newScale = Math.max(minScale, scale - 0.1);
-    if (newScale !== scale) {
-      setScale(newScale);
-      setTransform((prev) => ({
-        ...prev,
-        scale: newScale,
-      }));
-      onScaleChange?.(newScale);
-    }
-  }, [scale, minScale, onScaleChange]);
+    setScale((currentScale) => {
+      const newScale = Math.max(minScale, currentScale - 0.1);
+      if (newScale !== currentScale) {
+        setTimeout(() => {
+          setTransform((prev) => ({
+            ...prev,
+            scale: newScale,
+          }));
+          if (onScaleChange) onScaleChange(newScale);
+        }, 0);
+
+        return newScale;
+      }
+      return currentScale;
+    });
+  }, [minScale, onScaleChange, setTransform]);
 
   // Improved resetZoom function to always center the content
   const resetZoom = React.useCallback(() => {

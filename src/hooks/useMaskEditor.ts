@@ -614,7 +614,10 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       if (zoomPanState.isPanning || zoomPanState.isSpaceKeyDown) return;
 
       // Get the transformed coordinates
-      const { x, y } = zoomPanActions.getImageCoordinates(e.nativeEvent.clientX, e.nativeEvent.clientY);
+      const { x, y } = zoomPanActions.getImageCoordinates(
+        e.nativeEvent.clientX,
+        e.nativeEvent.clientY,
+      );
 
       if (maskContext) {
         maskContext.beginPath();
@@ -632,6 +635,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const handleMouseUp = React.useCallback(
     (e: React.MouseEvent<HTMLCanvasElement>) => {
       e.preventDefault();
+      if (zoomPanState.isPanning || zoomPanState.isSpaceKeyDown) return;
+
       setIsDrawing(false);
       setTimeout(() => {
         historyManager.saveToHistory();

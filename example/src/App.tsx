@@ -1,10 +1,10 @@
 import * as React from 'react';
-import {
-  MaskEditor,
-  toMask,
-  type MaskEditorCanvasRef,
-} from 'react-canvas-masker';
-// import { MaskEditor, toMask, type MaskEditorCanvasRef } from '../../src/index';
+// import {
+//   MaskEditor,
+//   toMask,
+//   type MaskEditorCanvasRef,
+// } from 'react-canvas-masker';
+import { MaskEditor, toMask, type MaskEditorCanvasRef } from '../../src/index';
 import 'react-canvas-masker/dist/style.css';
 // import './App.css';
 import MaskEditorProviderExample from './MaskEditorProviderExample';
