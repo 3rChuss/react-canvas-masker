@@ -5,33 +5,93 @@
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  margin: 0 auto;
+  position: relative; /* Ensure positioning context */
+  overflow: hidden;
 
   .react-mask-editor-inner {
     display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: flex-start;
+    justify-content: center;
+    align-items: center;
     position: relative;
-    overflow: auto;
+    overflow: hidden;
     flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      box-sizing: border-box;
+      width: 100%;
+      height: 100%;
+      min-height: 200px;
+      overflow: hidden; /* Prevent overflow */
+    }
 
     .all-canvases {
       position: relative;
+      will-change: transform;
+      touch-action: none;
+      width: auto;
+      height: auto;
+      display: block; /* Ensure proper display */
+      /* Enable hardware acceleration for smoother transforms */
+      transform-style: preserve-3d;
+      backface-visibility: hidden;
+      -webkit-transform-style: preserve-3d;
+      -webkit-backface-visibility: hidden;
+      /* Force GPU rendering */
+      transform: translateZ(0);
+      -webkit-transform: translateZ(0);
     }
   }
 
-  canvas {
+  /* Force each canvas to be a direct child of all-canvases to avoid stacking issues */
+  .all-canvases > canvas {
     position: absolute;
     top: 0;
     left: 0;
+    display: block;
+    /* Force rendering quality */
+
   }
 
-  .mask-canvas {
+  .react-mask-editor-base-canvas {
+    z-index: 5;
+  }
+
+  .react-mask-editor-mask-canvas {
     z-index: 10;
   }
 
-  .cursor-canvas {
+  .react-mask-editor-cursor-canvas {
     z-index: 20;
     background-color: transparent;
+    pointer-events: auto !important; /* Override to enable mouse events */
+  }
+}
+
+// Pan styles
+body.panning-active {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+// Define custom cursor for zoom if 'zoom-in' is not available in all browsers
+.react-mask-editor-inner {
+  &[style*="cursor: zoom-in"] {
+    cursor: zoom-in;
+  }
+
+  @supports not (cursor: zoom-in) {
+    &[style*="cursor: zoom-in"] {
+      cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="8" cy="8" r="7" stroke="black" stroke-width="1.5" fill="white" fill-opacity="0.5"/><line x1="13" y1="13" x2="18" y2="18" stroke="black" stroke-width="1.5"/><line x1="6" y1="8" x2="10" y2="8" stroke="black" stroke-width="1.5"/><line x1="8" y1="6" x2="8" y2="10" stroke="black" stroke-width="1.5"/></svg>') 10 10, auto;
+    }
   }
 }

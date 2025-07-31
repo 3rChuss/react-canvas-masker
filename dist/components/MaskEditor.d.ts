@@ -1,4 +1,4 @@
-import * as React from 'react';
+import React from 'react';
 import '../maskEditor.less';
 import type { UseMaskEditorProps } from '../hooks/useMaskEditor';
 import type { MaskEditorCanvasRef } from '../hooks/useMaskEditor';
@@ -7,3 +7,4 @@ export interface MaskEditorProps extends UseMaskEditorProps {
     canvasRef?: React.RefObject<MaskEditorCanvasRef>;
 }
 export declare const MaskEditor: React.FC<MaskEditorProps>;
+//# sourceMappingURL=MaskEditor.d.ts.map
