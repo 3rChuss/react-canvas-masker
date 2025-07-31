@@ -64,6 +64,8 @@ export interface MaskEditorCanvasRef {
     clear: () => void;
     resetZoom: () => void;
     setPan: (x: number, y: number) => void;
+    zoomIn: () => void;
+    zoomOut: () => void;
 }
 export interface UseMaskEditorReturn {
     canvasRef: React.RefObject<HTMLCanvasElement>;
@@ -100,6 +102,8 @@ export interface UseMaskEditorReturn {
     isZoomKeyDown: boolean;
     setPan: (x: number, y: number) => void;
     effectiveScale: number;
+    zoomIn: () => void;
+    zoomOut: () => void;
 }
 export declare const MaskEditorDefaults: {
     cursorSize: number;

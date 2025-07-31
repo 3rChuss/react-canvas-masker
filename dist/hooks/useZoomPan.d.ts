@@ -29,6 +29,8 @@ export interface ZoomPanActions {
         x: number;
         y: number;
     };
+    zoomIn: () => void;
+    zoomOut: () => void;
 }
 export declare function useZoomPan(containerRef: React.RefObject<HTMLDivElement>, contentSize: {
     x: number;

@@ -107,6 +107,8 @@ The `MaskEditor` component exposes useful methods via `ref`:
 | `clear()`     | `() => void`                     | Clear the mask.                                   |                          |
 | `resetZoom()` | `() => void`                     | Reset zoom to initial scale and center the image. |                          |
 | `setPan()`    | `(x: number, y: number) => void` | Set the pan position manually.                    |                          |
+| `zoomIn()`    | `() => void`                     | Zoom in by one step (0.1 scale increment).        |                          |
+| `zoomOut()`   | `() => void`                     | Zoom out by one step (0.1 scale decrement).       |                          |
 
 ---
 
@@ -305,7 +307,7 @@ const MaskEditorCanvas = () => {
 };
 
 const MaskEditorControls = () => {
-  const { undo, redo, clear, resetZoom, setPan, scale } =
+  const { undo, redo, clear, resetZoom, setPan, scale, zoomIn, zoomOut } =
     useMaskEditorContext();
 
   return (
@@ -313,6 +315,8 @@ const MaskEditorControls = () => {
       <button onClick={undo}>Undo</button>
       <button onClick={redo}>Redo</button>
       <button onClick={clear}>Clear</button>
+      <button onClick={zoomIn}>Zoom In</button>
+      <button onClick={zoomOut}>Zoom Out</button>
       <button onClick={resetZoom}>Reset Zoom</button>
       <button onClick={() => setPan(0, 0)}>Center Image</button>
       <div>Current Zoom: {Math.round(scale * 100)}%</div>
@@ -344,15 +348,32 @@ const App = () => (
 
 ---
 
-## � Zoom and Pan Features
+## 🔍 Zoom and Pan Features
 
 The editor includes sophisticated zoom and pan capabilities to enable precise mask editing:
 
 ### User Interactions
 
-- **Zoom**: Use `Ctrl/Cmd + Mouse Wheel` to zoom in/out centered on cursor position
+- **Zoom**: Use `Ctrl/Cmd + Mouse Wheel` to zoom in/out centered on image
 - **Pan**: Hold `Space` and drag to pan the image, or use middle mouse button
 - **Resize Brush**: Use `Mouse Wheel` (without modifier keys) to adjust brush size
+
+### Zoom Control API
+
+The editor now provides explicit zoom control methods through the imperative API:
+
+- **zoomIn()**: Increases zoom by 0.1 scale increment (respects maxScale limit)
+- **zoomOut()**: Decreases zoom by 0.1 scale decrement (respects minScale limit)
+- **resetZoom()**: Resets zoom to scale 1 and centers the image
+- **setPan(x, y)**: Manually sets the pan position
+
+These methods can be accessed through:
+
+- Component ref: `maskEditorRef.current.zoomIn()`
+- Context: `const { zoomIn } = useMaskEditorContext()`
+- Hook: `const { zoomIn } = useMaskEditor(props)`
+
+Perfect for implementing custom toolbar zoom controls with buttons or sliders!
 
 ### Automatic Behaviors
 
@@ -368,15 +389,10 @@ The editor includes sophisticated zoom and pan capabilities to enable precise ma
 const CustomZoomControls = () => {
   const maskEditorRef = React.useRef(null);
 
-  const zoomIn = () => {
-    // Get current scale from your state management or context
-    const currentScale = 1.5; // Example value
-    // Set new scale via your state management
-    // ...
-  };
-
   return (
     <>
+      <button onClick={() => maskEditorRef.current?.zoomIn()}>Zoom In</button>
+      <button onClick={() => maskEditorRef.current?.zoomOut()}>Zoom Out</button>
       <button onClick={() => maskEditorRef.current?.resetZoom()}>
         Reset Zoom & Center
       </button>
