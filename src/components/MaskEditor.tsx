@@ -117,12 +117,10 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
           width: '100%',
           height: '100%',
           overflow: 'hidden',
-
           position: 'relative',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          background: '#f0f0f0', // Add background to make it visible even without image
         }}
       >
         <div

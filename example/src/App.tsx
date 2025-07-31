@@ -84,7 +84,6 @@ function App() {
             style={{
               width: '800px',
               height: '600px',
-              border: '2px solid #888',
               justifyContent: 'center',
               alignItems: 'center',
               position: 'relative',
