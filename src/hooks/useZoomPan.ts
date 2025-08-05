@@ -67,6 +67,12 @@ export function useZoomPan(
     x: 0,
     y: 0,
   });
+  
+  // Current mouse position for zoom calculations
+  const [currentMousePosition, setCurrentMousePosition] = React.useState({
+    x: 0,
+    y: 0,
+  });
 
   // Scale factor for automatic scaling
   const [baseScale, setBaseScale] = React.useState(1);
@@ -323,14 +329,39 @@ export function useZoomPan(
 
   // Function to zoom in
   const zoomIn = React.useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    // Use current mouse position or default to center if no mouse position tracked
+    const mouseX = currentMousePosition.x > 0 
+      ? currentMousePosition.x - rect.left 
+      : rect.width / 2;
+    const mouseY = currentMousePosition.y > 0 
+      ? currentMousePosition.y - rect.top 
+      : rect.height / 2;
+    
     setScale((currentScale) => {
       const newScale = Math.min(maxScale, currentScale + 0.1);
       if (newScale !== currentScale) {
+        // Calculate the position of the mouse in the original image space
+        const pointXBeforeZoom =
+          mouseX / baseScale - transform.translateX * transform.scale;
+        const pointYBeforeZoom =
+          mouseY / baseScale - transform.translateY * transform.scale;
+
+        // Calculate new translation to keep the point under cursor fixed
+        const newTranslateX =
+          -pointXBeforeZoom / newScale + mouseX / baseScale / newScale;
+        const newTranslateY =
+          -pointYBeforeZoom / newScale + mouseY / baseScale / newScale;
+
         setTimeout(() => {
-          setTransform((prev) => ({
-            ...prev,
+          setTransform({
             scale: newScale,
-          }));
+            translateX: newTranslateX,
+            translateY: newTranslateY,
+          });
           if (onScaleChange) onScaleChange(newScale);
         }, 0);
 
@@ -338,18 +369,43 @@ export function useZoomPan(
       }
       return currentScale;
     });
-  }, [maxScale, onScaleChange, setTransform]);
+  }, [maxScale, onScaleChange, transform, baseScale, containerRef, currentMousePosition]);
 
   // Function to zoom out
   const zoomOut = React.useCallback(() => {
+    if (!containerRef.current) return;
+    
+    const rect = containerRef.current.getBoundingClientRect();
+    
+    // Use current mouse position or default to center if no mouse position tracked
+    const mouseX = currentMousePosition.x > 0 
+      ? currentMousePosition.x - rect.left 
+      : rect.width / 2;
+    const mouseY = currentMousePosition.y > 0 
+      ? currentMousePosition.y - rect.top 
+      : rect.height / 2;
+    
     setScale((currentScale) => {
       const newScale = Math.max(minScale, currentScale - 0.1);
       if (newScale !== currentScale) {
+        // Calculate the position of the mouse in the original image space
+        const pointXBeforeZoom =
+          mouseX / baseScale - transform.translateX * transform.scale;
+        const pointYBeforeZoom =
+          mouseY / baseScale - transform.translateY * transform.scale;
+
+        // Calculate new translation to keep the point under cursor fixed
+        const newTranslateX =
+          -pointXBeforeZoom / newScale + mouseX / baseScale / newScale;
+        const newTranslateY =
+          -pointYBeforeZoom / newScale + mouseY / baseScale / newScale;
+
         setTimeout(() => {
-          setTransform((prev) => ({
-            ...prev,
+          setTransform({
             scale: newScale,
-          }));
+            translateX: newTranslateX,
+            translateY: newTranslateY,
+          });
           if (onScaleChange) onScaleChange(newScale);
         }, 0);
 
@@ -357,7 +413,7 @@ export function useZoomPan(
       }
       return currentScale;
     });
-  }, [minScale, onScaleChange, setTransform]);
+  }, [minScale, onScaleChange, transform, baseScale, containerRef, currentMousePosition]);
 
   // Improved resetZoom function to always center the content
   const resetZoom = React.useCallback(() => {
@@ -481,6 +537,23 @@ export function useZoomPan(
       window.removeEventListener('blur', handleBlur);
     };
   }, [isSpaceKeyDown, isZoomKeyDown, transform.scale, handleBlur]);
+
+  // Mouse tracking for zoom calculations
+  React.useEffect(() => {
+    if (!containerRef.current) return;
+
+    const container = containerRef.current;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      setCurrentMousePosition({ x: e.clientX, y: e.clientY });
+    };
+
+    container.addEventListener('mousemove', handleMouseMove);
+    
+    return () => {
+      container.removeEventListener('mousemove', handleMouseMove);
+    };
+  }, [containerRef]);
 
   // Pan handling with mouse events
   React.useEffect(() => {
