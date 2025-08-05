@@ -16,7 +16,7 @@ type Story = StoryObj<typeof MaskEditor>;
 
 export const BareEditorStory: Story = {
   args: {
-    src: '../../cat.jpg',
+    src: './cat.jpg',
     maskColor: '#ffffff',
   },
   name: 'Default',
