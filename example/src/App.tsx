@@ -18,7 +18,6 @@ function App() {
   const [color, setColor] = React.useState('#c3c3c3');
   const [scale, setScale] = React.useState(1);
   const [panPosition, setPanPosition] = React.useState({ x: 0, y: 0 });
-  console.log('Mask:', mask);
 
   return (
     <>
