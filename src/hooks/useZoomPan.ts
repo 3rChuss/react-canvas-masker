@@ -107,28 +107,22 @@ export function useZoomPan(
       const containerWidth = rect.width;
       const containerHeight = rect.height;
 
-      // Obtener posición del cursor relativa al contenedor
       const offsetX = clientX - rect.left;
       const offsetY = clientY - rect.top;
 
-      // Factor de escala combinada
       const combinedScale = transform.scale * baseScale;
 
-      // 2. Calculamos el desplazamiento desde el centro del contenedor (en píxeles del contenedor)
       const fromCenterX = offsetX - containerWidth / 2;
       const fromCenterY = offsetY - containerHeight / 2;
 
-      // 3. Convertimos a coordenadas del espacio escalado (primero deshacemos la traslación del usuario)
       const withoutUserTranslateX =
         fromCenterX - transform.translateX * combinedScale;
       const withoutUserTranslateY =
         fromCenterY - transform.translateY * combinedScale;
 
-      // 4. Convertimos al espacio original dividiendo por la escala combinada
       const inOriginalSpaceX = withoutUserTranslateX / combinedScale;
       const inOriginalSpaceY = withoutUserTranslateY / combinedScale;
 
-      // 5. Ajustamos para obtener las coordenadas dentro de la imagen
       const x = inOriginalSpaceX + contentSize.x / 2;
       const y = inOriginalSpaceY + contentSize.y / 2;
 
@@ -139,6 +133,7 @@ export function useZoomPan(
       transform.translateX,
       transform.translateY,
       baseScale,
+      contentSize,
       containerRef,
     ],
   );
@@ -245,7 +240,13 @@ export function useZoomPan(
         onPanChange(centerOffsetX, centerOffsetY);
       }, 0);
     }
-  }, [contentSize, containerRef, calculateBaseScale]);
+  }, [
+    contentSize,
+    containerRef,
+    calculateBaseScale,
+    onScaleChange,
+    onPanChange,
+  ]);
 
   React.useLayoutEffect(() => {
     // Skip if no container or content size
@@ -262,7 +263,54 @@ export function useZoomPan(
     }
   }, [contentSize, recalculateBaseScaleAndCenter]);
 
-  // Handle zoom with mouse wheel (improved to maintain point-under-cursor)
+  // Function to zoom to a specific point
+  const zoomToPoint = React.useCallback(
+    (newScale: number, pointX: number, pointY: number) => {
+      if (!containerRef.current) return;
+
+      const rect = containerRef.current.getBoundingClientRect();
+      const imagePointUnderCursor = getImageCoordinates(
+        rect.left + pointX,
+        rect.top + pointY,
+      );
+
+      const containerCenterX = rect.width / 2;
+      const containerCenterY = rect.height / 2;
+      const cursorOffsetX = pointX - containerCenterX;
+      const cursorOffsetY = pointY - containerCenterY;
+      const newCombinedScale = baseScale * newScale;
+
+      const finalOffsetX =
+        (imagePointUnderCursor.x - contentSize.x / 2) * newCombinedScale -
+        cursorOffsetX;
+      const finalOffsetY =
+        (imagePointUnderCursor.y - contentSize.y / 2) * newCombinedScale -
+        cursorOffsetY;
+
+      const newTranslateX = -finalOffsetX / newCombinedScale;
+      const newTranslateY = -finalOffsetY / newCombinedScale;
+
+      setScale(newScale);
+      setTransform({
+        scale: newScale,
+        translateX: newTranslateX,
+        translateY: newTranslateY,
+      });
+
+      onScaleChange?.(newScale);
+      onPanChange?.(newTranslateX, newTranslateY);
+    },
+    [
+      baseScale,
+      scale,
+      contentSize,
+      onScaleChange,
+      onPanChange,
+      getImageCoordinates,
+    ],
+  );
+
+  // Handle zoom with mouse wheel
   React.useEffect(() => {
     if (!enableWheelZoom || !containerRef.current) return;
 
@@ -274,57 +322,24 @@ export function useZoomPan(
 
       const rect = container.getBoundingClientRect();
 
-      // Get the position of the mouse relative to the container
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      // Calculate the position of the mouse in the original image space
-      // This is the point we want to keep fixed during the zoom
-      const pointXBeforeZoom =
-        mouseX / baseScale - transform.translateX * transform.scale;
-      const pointYBeforeZoom =
-        mouseY / baseScale - transform.translateY * transform.scale;
-
-      // Calculate the new scale
       const delta = -e.deltaY * 0.01;
       const newScale = Math.max(minScale, Math.min(maxScale, scale + delta));
 
       if (newScale !== scale) {
-        // Calculate new translation to keep the point under cursor fixed
-        const newTranslateX =
-          -pointXBeforeZoom / newScale + mouseX / baseScale / newScale;
-        const newTranslateY =
-          -pointYBeforeZoom / newScale + mouseY / baseScale / newScale;
-
-        // Update state
-        setScale(newScale);
-        setTransform({
-          scale: newScale,
-          translateX: newTranslateX,
-          translateY: newTranslateY,
-        });
-
-        onScaleChange?.(newScale);
+        zoomToPoint(newScale, mouseX, mouseY);
       }
     };
 
     container.addEventListener('wheel', handleWheel, { passive: false });
     return () => container.removeEventListener('wheel', handleWheel);
-  }, [
-    scale,
-    transform,
-    baseScale,
-    minScale,
-    maxScale,
-    enableWheelZoom,
-    onScaleChange,
-    containerRef,
-  ]);
+  }, [scale, minScale, maxScale, enableWheelZoom, containerRef, zoomToPoint]);
 
-  // Function to zoom in
   const zoomIn = React.useCallback(() => {
     setScale((currentScale) => {
-      const newScale = Math.min(maxScale, currentScale + 0.1);
+      const newScale = Math.min(maxScale, currentScale + 0.2);
       if (newScale !== currentScale) {
         setTimeout(() => {
           setTransform((prev) => ({
@@ -340,10 +355,9 @@ export function useZoomPan(
     });
   }, [maxScale, onScaleChange, setTransform]);
 
-  // Function to zoom out
   const zoomOut = React.useCallback(() => {
     setScale((currentScale) => {
-      const newScale = Math.max(minScale, currentScale - 0.1);
+      const newScale = Math.max(minScale, currentScale - 0.2);
       if (newScale !== currentScale) {
         setTimeout(() => {
           setTransform((prev) => ({
@@ -361,7 +375,6 @@ export function useZoomPan(
 
   // Improved resetZoom function to always center the content
   const resetZoom = React.useCallback(() => {
-    // Reset scale to 1
     setScale(1);
     const centerOffsetX = 0;
     const centerOffsetY = 0;
@@ -381,7 +394,7 @@ export function useZoomPan(
       if (onScaleChange) onScaleChange(1);
       if (onPanChange) onPanChange(centerOffsetX, centerOffsetY);
     }, 0);
-  }, [calculateBaseScale, contentSize]); // Removed onScaleChange and onPanChange to break potential cycles
+  }, [onScaleChange, onPanChange]);
 
   // Function to programmatically set pan position with improved centering logic
   const setPan = React.useCallback(
@@ -423,7 +436,7 @@ export function useZoomPan(
         return newTransform;
       });
     },
-    [constrainPan, onPanChange, contentSize, containerRef, transform.scale], // Added transform.scale to dependencies
+    [constrainPan, onPanChange, contentSize, containerRef],
   );
 
   // Blur handler
