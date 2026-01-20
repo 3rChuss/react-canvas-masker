@@ -18,6 +18,8 @@ function App() {
   const [color, setColor] = React.useState('#c3c3c3');
   const [scale, setScale] = React.useState(1);
   const [panPosition, setPanPosition] = React.useState({ x: 0, y: 0 });
+  const imgSrc =
+    'https://static.vecteezy.com/system/resources/previews/049/855/471/large_2x/nature-background-high-resolution-wallpaper-for-a-serene-and-stunning-view-free-photo.jpg';
   console.log('Mask:', mask);
 
   return (
@@ -82,8 +84,8 @@ function App() {
         >
           <div
             style={{
-              width: '800px',
-              height: '600px',
+              width: '1602px',
+              height: '900px',
               justifyContent: 'center',
               alignItems: 'center',
               position: 'relative',
@@ -92,7 +94,7 @@ function App() {
           >
             <MaskEditor
               key={'mask-editor'}
-              src="https://firebasestorage.googleapis.com/v0/b/aliz-otp-genai-poc-sandbox-assets/o/b0d9a293-3ce4-4b76-ba27-b945826e881b%2F1751276672390%2Fsample_1.png?alt=media&token=43eb8d0f-5db7-4f83-a1c9-c0f5d20487b8"
+              src={imgSrc}
               maskColor={color}
               cursorSize={size}
               onCursorSizeChange={setSize}
@@ -106,6 +108,7 @@ function App() {
               maxScale={4}
               onScaleChange={setScale}
               enableWheelZoom
+              maxWidth={1602}
               constrainPan
               onPanChange={(x, y) => setPanPosition({ x, y })}
             />
@@ -164,6 +167,78 @@ function App() {
             Center View
           </button>
         </div>
+        {mask && (
+          <div
+            style={{
+              marginTop: 16,
+              display: 'flex',
+              gap: 24,
+              alignItems: 'flex-start',
+            }}
+          >
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Original image</strong>
+              </div>
+              <img
+                src={imgSrc}
+                alt="Original"
+                style={{
+                  maxWidth: 320,
+                  maxHeight: 240,
+                  display: 'block',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Extracted mask</strong>
+              </div>
+              <img
+                src={mask}
+                alt="Extracted Mask"
+                style={{
+                  maxWidth: 320,
+                  maxHeight: 240,
+                  display: 'block',
+                  objectFit: 'cover',
+                }}
+              />
+            </div>
+            <div>
+              <div style={{ marginBottom: 8 }}>
+                <strong>Overlay</strong>
+              </div>
+              <div style={{ position: 'relative', width: 320, height: 240 }}>
+                <img
+                  src={imgSrc}
+                  alt="Original for overlay"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    display: 'block',
+                  }}
+                />
+                <img
+                  src={mask}
+                  alt="Mask overlay"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    opacity: 0.6,
+                    pointerEvents: 'none',
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
         <div style={{ marginTop: 16 }}></div>
       </div>
       <div style={{ padding: 32 }}>
