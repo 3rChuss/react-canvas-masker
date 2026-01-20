@@ -66,6 +66,56 @@ const MyComponent = () => {
 };
 ```
 
+### Pre-loading an Existing Mask
+
+You can resume editing from a previously saved mask by passing it as the `initialMask` prop:
+
+```tsx
+import React from 'react';
+import { MaskEditor, toMask } from 'react-canvas-masker';
+
+const MyComponent = () => {
+  const canvas = React.useRef(null);
+  const [savedMask, setSavedMask] = React.useState(null);
+
+  return (
+    <>
+      <MaskEditor 
+        src="https://placekitten.com/256/256" 
+        canvasRef={canvas}
+        initialMask={savedMask} // Load previously saved mask
+        onMaskChange={(mask) => {
+          // Auto-save mask on changes
+          localStorage.setItem('myMask', mask);
+        }}
+      />
+      <button
+        onClick={() => {
+          if (canvas.current?.maskCanvas) {
+            const mask = toMask(canvas.current.maskCanvas);
+            setSavedMask(mask);
+            localStorage.setItem('myMask', mask);
+          }
+        }}
+      >
+        Save Mask
+      </button>
+      <button
+        onClick={() => {
+          const loadedMask = localStorage.getItem('myMask');
+          if (loadedMask) {
+            setSavedMask(loadedMask);
+          }
+        }}
+      >
+        Load Saved Mask
+      </button>
+    </>
+  );
+};
+```
+
+
 ---
 
 ## ⚙️ Component Props
@@ -85,6 +135,7 @@ const MyComponent = () => {
 | `onUndoRequest`      | `() => void`                     | No         | —         | Called when the user requests an undo action.                                                |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `onRedoRequest`      | `() => void`                     | No         | —         | Called when the user requests a redo action.                                                 |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `onMaskChange`       | `(mask: string) => void`         | No         | —         | Called with the current mask (as a dataURL) when the mask changes. Debounced while drawing.  |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
+| `initialMask`        | `string`                         | No         | —         | Pre-load an existing mask as base64 data URL. Useful for resuming editing from a saved state. |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `scale`              | `number`                         | No         | `1`       | Initial zoom scale for the image editor.                                                     |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `minScale`           | `number`                         | No         | `0.8`     | Minimum allowed zoom scale.                                                                  |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |
 | `maxScale`           | `number`                         | No         | `4`       | Maximum allowed zoom scale.                                                                  |          |           |               |              |              |              |              |             |       |              |         |                |     |          |                                                                                                      |

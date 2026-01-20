@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { MaskEditor } from './components/MaskEditor';
+import { MaskEditorProvider } from './components/MaskEditorProvider';
 import { useMaskEditor, type MaskEditorCanvasRef } from './hooks/useMaskEditor';
 import { toMask } from './utils';
 
@@ -16,7 +17,7 @@ type Story = StoryObj<typeof MaskEditor>;
 
 export const BareEditorStory: Story = {
   args: {
-    src: '../../cat.jpg',
+    src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
     maskColor: '#ffffff',
   },
   name: 'Default',
@@ -127,6 +128,92 @@ export const HookUsageStory: Story = {
         <button onClick={clear}>Clear</button>
         <img src={mask} style={{ border: '1px solid gray' }} />
       </div>
+    );
+  },
+};
+
+export const PreLoadMaskStory: Story = {
+  args: {
+    src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
+    maskColor: '#ffffff',
+  },
+  name: 'Pre-load existing mask',
+  render: (args) => {
+    const [size, setSize] = React.useState(10);
+    const canvas = React.useRef<MaskEditorCanvasRef>(null);
+    const [mask, setMask] = React.useState('');
+    const [savedMask, setSavedMask] = React.useState<string | undefined>(
+      undefined,
+    );
+    // Stored mask separate from the prop so we can force a reload
+    const [storedMask, setStoredMask] = React.useState<string | undefined>(
+      undefined,
+    );
+
+    return (
+      <>
+        <div style={{ marginBottom: '10px' }}>
+          <p>
+            <strong>Instructions:</strong> Draw a mask, click "Save Mask", then
+            click "Clear", and finally click "Load Saved Mask" to restore it.
+            The "Load Saved Mask" button will reliably reload the saved mask
+            even if it's the same value as before.
+          </p>
+        </div>
+        <MaskEditor
+          {...args}
+          cursorSize={size}
+          onCursorSizeChange={setSize}
+          canvasRef={canvas}
+          initialMask={savedMask}
+          onDrawingChange={(isDrawing) => {
+            console.log('Drawing state changed:', isDrawing);
+          }}
+          onMaskChange={(newMask) => {
+            console.log('Mask changed');
+            setMask(newMask);
+          }}
+        />
+        <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+          <button
+            onClick={() => {
+              if (canvas.current?.maskCanvas) {
+                const extractedMask = toMask(canvas.current.maskCanvas);
+                setSavedMask(extractedMask);
+                setStoredMask(extractedMask);
+                setMask(extractedMask);
+              }
+            }}
+          >
+            Save Mask
+          </button>
+          <button
+            onClick={() => {
+              if (storedMask) {
+                // Force reload by clearing the prop then re-setting it
+                setSavedMask(undefined);
+                setTimeout(() => setSavedMask(storedMask), 100);
+                console.log('Loading saved mask...');
+              } else {
+                console.log('No saved mask found. Draw and save a mask first.');
+              }
+            }}
+          >
+            Load Saved Mask
+          </button>
+          <button onClick={() => canvas.current?.clear?.()}>Clear</button>
+          <button onClick={() => canvas.current?.undo?.()}>Undo</button>
+          <button onClick={() => canvas.current?.redo?.()}>Redo</button>
+        </div>
+        {mask && (
+          <div style={{ marginTop: '10px' }}>
+            <p>
+              <strong>Extracted Mask Preview:</strong>
+            </p>
+            <img src={mask} style={{ border: '1px solid gray' }} />
+          </div>
+        )}
+      </>
     );
   },
 };
