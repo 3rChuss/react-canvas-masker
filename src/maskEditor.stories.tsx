@@ -144,7 +144,6 @@ export const PreLoadMaskStory: Story = {
     const [savedMask, setSavedMask] = React.useState<string | undefined>(
       undefined,
     );
-    const [editorKey, setEditorKey] = React.useState(0);
 
     return (
       <>
@@ -156,7 +155,6 @@ export const PreLoadMaskStory: Story = {
         </div>
         <MaskEditor
           {...args}
-          key={editorKey}
           cursorSize={size}
           onCursorSizeChange={setSize}
           canvasRef={canvas}
@@ -176,7 +174,6 @@ export const PreLoadMaskStory: Story = {
                 const extractedMask = toMask(canvas.current.maskCanvas);
                 setSavedMask(extractedMask);
                 setMask(extractedMask);
-                alert('Mask saved! Click "Load Saved Mask" to restore it.');
               }
             }}
           >
@@ -185,11 +182,10 @@ export const PreLoadMaskStory: Story = {
           <button
             onClick={() => {
               if (savedMask) {
-                // Force re-render with saved mask using key prop
-                setEditorKey((prev) => prev + 1);
-                alert('Mask loaded!');
+                // The component will react to the savedMask prop change
+                console.log('Loading saved mask...');
               } else {
-                alert('No saved mask found. Draw and save a mask first.');
+                console.log('No saved mask found. Draw and save a mask first.');
               }
             }}
           >
