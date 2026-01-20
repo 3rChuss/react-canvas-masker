@@ -372,7 +372,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   React.useEffect(() => {
     if (!initialMask || !maskContext || size.x === 0 || size.y === 0) return;
 
-    const loadInitialMask = async () => {
+    const loadInitialMask = () => {
       try {
         const img = new window.Image();
         img.crossOrigin = 'anonymous';
@@ -388,9 +388,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
             maskContext.drawImage(img, 0, 0, size.x, size.y);
 
             // Save to history after loading
-            setTimeout(() => {
-              historyManager.saveToHistory();
-            }, 0);
+            historyManager.saveToHistory();
           }
         };
 
