@@ -16,8 +16,6 @@ export interface MaskEditorProps extends UseMaskEditorProps {
 export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
   const {
     canvasRef: externalMaskCanvasRef,
-    maxWidth = 1240,
-    maxHeight = 1240,
     ...hookProps
   } = props;
 
@@ -105,8 +103,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
       className="react-mask-editor-outer"
       data-mask-editor-id={uniqueId}
       style={{
-        maxWidth: `${maxWidth}px`,
-        maxHeight: `${maxHeight}px`,
+        maxWidth: props.maxWidth ? `${props.maxWidth}px` : undefined,
+        maxHeight: props.maxHeight ? `${props.maxHeight}px` : undefined,
         minHeight: '300px',
         width: '100%',
         height: '100%',
