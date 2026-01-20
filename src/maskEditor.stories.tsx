@@ -145,6 +145,10 @@ export const PreLoadMaskStory: Story = {
     const [savedMask, setSavedMask] = React.useState<string | undefined>(
       undefined,
     );
+    // Stored mask separate from the prop so we can force a reload
+    const [storedMask, setStoredMask] = React.useState<string | undefined>(
+      undefined,
+    );
 
     return (
       <>
@@ -152,6 +156,8 @@ export const PreLoadMaskStory: Story = {
           <p>
             <strong>Instructions:</strong> Draw a mask, click "Save Mask", then
             click "Clear", and finally click "Load Saved Mask" to restore it.
+            The "Load Saved Mask" button will reliably reload the saved mask
+            even if it's the same value as before.
           </p>
         </div>
         <MaskEditor
@@ -174,6 +180,7 @@ export const PreLoadMaskStory: Story = {
               if (canvas.current?.maskCanvas) {
                 const extractedMask = toMask(canvas.current.maskCanvas);
                 setSavedMask(extractedMask);
+                setStoredMask(extractedMask);
                 setMask(extractedMask);
               }
             }}
@@ -182,8 +189,10 @@ export const PreLoadMaskStory: Story = {
           </button>
           <button
             onClick={() => {
-              if (savedMask) {
-                // The component will react to the savedMask prop change
+              if (storedMask) {
+                // Force reload by clearing the prop then re-setting it
+                setSavedMask(undefined);
+                setTimeout(() => setSavedMask(storedMask), 100);
                 console.log('Loading saved mask...');
               } else {
                 console.log('No saved mask found. Draw and save a mask first.');

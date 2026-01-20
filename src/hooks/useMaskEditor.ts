@@ -196,6 +196,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
   const maskCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const cursorCanvasRef = React.useRef<HTMLCanvasElement>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const initialMaskAppliedRef = React.useRef<string | null>(null);
+  const initialMaskApplyingRef = React.useRef(false);
 
   // Canvas contexts
   const [context, setContext] = React.useState<CanvasRenderingContext2D | null>(
@@ -368,42 +370,74 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     }
   }, [cursorCanvasRef, cursorContext]);
 
-  // Load initial mask if provided
+  // Load initial mask if provided (apply once per value, safe and cancellable)
   React.useEffect(() => {
     if (!initialMask || !maskContext || size.x === 0 || size.y === 0) return;
+    // If we've already applied this exact initialMask value, skip reapplying
+    if (
+      initialMaskAppliedRef.current === initialMask ||
+      initialMaskApplyingRef.current
+    )
+      return;
 
-    const loadInitialMask = () => {
+    let cancelled = false;
+    initialMaskApplyingRef.current = true;
+
+    const img = new window.Image();
+    img.crossOrigin = 'anonymous';
+
+    const finalizeApply = () => {
+      initialMaskApplyingRef.current = false;
+    };
+
+    img.onload = () => {
+      if (cancelled || !maskContext || !maskCanvasRef.current) {
+        finalizeApply();
+        return;
+      }
+
       try {
-        const img = new window.Image();
-        img.crossOrigin = 'anonymous';
+        // Overwrite mask canvas (clear -> white background -> draw)
+        maskContext.clearRect(0, 0, size.x, size.y);
+        maskContext.fillStyle = '#ffffff';
+        maskContext.fillRect(0, 0, size.x, size.y);
+        maskContext.drawImage(img, 0, 0, size.x, size.y);
 
-        img.onload = () => {
-          if (maskContext && maskCanvasRef.current) {
-            // Clear the mask canvas first
-            maskContext.clearRect(0, 0, size.x, size.y);
-            maskContext.fillStyle = '#ffffff';
-            maskContext.fillRect(0, 0, size.x, size.y);
+        // Save to history so that undo/redo works from this base state
+        historyManager.saveToHistory();
 
-            // Draw the initial mask image onto the mask canvas
-            maskContext.drawImage(img, 0, 0, size.x, size.y);
-
-            // Save to history after loading
-            historyManager.saveToHistory();
+        // Notify consumer immediately about the new mask
+        if (onMaskChange && maskCanvasRef.current) {
+          try {
+            onMaskChange(toMask(maskCanvasRef.current));
+          } catch (err) {
+            // Swallow exceptions from consumer callbacks but log
+            console.error('[MaskEditor] onMaskChange callback threw:', err);
           }
-        };
+        }
 
-        img.onerror = () => {
-          console.error('[MaskEditor] Failed to load initial mask');
-        };
-
-        img.src = initialMask;
-      } catch (error) {
-        console.error('[MaskEditor] Error loading initial mask:', error);
+        // Mark as applied
+        initialMaskAppliedRef.current = initialMask;
+      } catch (err) {
+        console.error('[MaskEditor] Error applying initial mask:', err);
+      } finally {
+        finalizeApply();
       }
     };
 
-    loadInitialMask();
-  }, [initialMask, maskContext, size, historyManager]);
+    img.onerror = () => {
+      console.error('[MaskEditor] Failed to load initial mask');
+      finalizeApply();
+    };
+
+    // Start loading
+    img.src = initialMask;
+
+    return () => {
+      cancelled = true;
+      initialMaskApplyingRef.current = false;
+    };
+  }, [initialMask, maskContext, size, historyManager, onMaskChange]);
 
   // Function to prepare and apply image size with enhanced error handling and diagnostics
   const prepareAndApplyImage = React.useCallback(

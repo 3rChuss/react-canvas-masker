@@ -1,6 +1,6 @@
 {
   "name": "react-canvas-masker",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "General-purpose mask editor for React image manipulation apps",
   "main": "./dist/index.js",
   "author": "3rchuss",
@@ -38,9 +38,14 @@
     "build": "cross-env NODE_ENV=production webpack --config webpack.config.js --mode production",
     "dist": "npm-run-all clean tsc:declaration compile",
     "storybook": "storybook dev -p 6006",
+    "test": "vitest",
     "prepublishOnly": "npm run dist"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^14.0.0",
+    "@testing-library/user-event": "^14.4.3",
+    "vitest": "^0.34.0",
     "@storybook/addon-docs": "^9.0.16",
     "@storybook/addon-links": "^9.0.16",
     "@storybook/react-vite": "^9.0.16",
