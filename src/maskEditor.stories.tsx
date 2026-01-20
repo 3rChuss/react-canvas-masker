@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { MaskEditor } from './components/MaskEditor';
+import { MaskEditorProvider } from './components/MaskEditorProvider';
 import { useMaskEditor, type MaskEditorCanvasRef } from './hooks/useMaskEditor';
 import { toMask } from './utils';
 
@@ -16,7 +17,7 @@ type Story = StoryObj<typeof MaskEditor>;
 
 export const BareEditorStory: Story = {
   args: {
-    src: '../../cat.jpg',
+    src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
     maskColor: '#ffffff',
   },
   name: 'Default',
@@ -133,7 +134,7 @@ export const HookUsageStory: Story = {
 
 export const PreLoadMaskStory: Story = {
   args: {
-    src: 'https://placekitten.com/400/300',
+    src: 'https://raw.githubusercontent.com/la-voliere/react-mask-editor/ae23a726b8adf2712667b2e66d6c0244ef967e9c/src/cat.jpg',
     maskColor: '#ffffff',
   },
   name: 'Pre-load existing mask',
