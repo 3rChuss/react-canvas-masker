@@ -130,3 +130,83 @@ export const HookUsageStory: Story = {
     );
   },
 };
+
+export const PreLoadMaskStory: Story = {
+  args: {
+    src: 'https://placekitten.com/400/300',
+    maskColor: '#ffffff',
+  },
+  name: 'Pre-load existing mask',
+  render: (args) => {
+    const [size, setSize] = React.useState(10);
+    const canvas = React.useRef<MaskEditorCanvasRef>(null);
+    const [mask, setMask] = React.useState('');
+    const [savedMask, setSavedMask] = React.useState<string | undefined>(
+      undefined,
+    );
+
+    return (
+      <>
+        <div style={{ marginBottom: '10px' }}>
+          <p>
+            <strong>Instructions:</strong> Draw a mask, click "Save Mask", then
+            click "Clear", and finally click "Load Saved Mask" to restore it.
+          </p>
+        </div>
+        <MaskEditor
+          {...args}
+          cursorSize={size}
+          onCursorSizeChange={setSize}
+          canvasRef={canvas}
+          initialMask={savedMask}
+          onDrawingChange={(isDrawing) => {
+            console.log('Drawing state changed:', isDrawing);
+          }}
+          onMaskChange={(newMask) => {
+            console.log('Mask changed');
+            setMask(newMask);
+          }}
+        />
+        <div style={{ marginTop: '10px', display: 'flex', gap: '5px' }}>
+          <button
+            onClick={() => {
+              if (canvas.current?.maskCanvas) {
+                const extractedMask = toMask(canvas.current.maskCanvas);
+                setSavedMask(extractedMask);
+                setMask(extractedMask);
+                alert('Mask saved! Click "Load Saved Mask" to restore it.');
+              }
+            }}
+          >
+            Save Mask
+          </button>
+          <button
+            onClick={() => {
+              if (savedMask) {
+                // Force re-render with saved mask by setting it to undefined first
+                setSavedMask(undefined);
+                setTimeout(() => setSavedMask(savedMask), 100);
+                alert('Mask loaded!');
+              } else {
+                alert('No saved mask found. Draw and save a mask first.');
+              }
+            }}
+          >
+            Load Saved Mask
+          </button>
+          <button onClick={() => canvas.current?.clear?.()}>Clear</button>
+          <button onClick={() => canvas.current?.undo?.()}>Undo</button>
+          <button onClick={() => canvas.current?.redo?.()}>Redo</button>
+        </div>
+        {mask && (
+          <div style={{ marginTop: '10px' }}>
+            <p>
+              <strong>Extracted Mask Preview:</strong>
+            </p>
+            <img src={mask} style={{ border: '1px solid gray' }} />
+          </div>
+        )}
+      </>
+    );
+  },
+};

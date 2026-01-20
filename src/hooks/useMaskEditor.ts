@@ -50,6 +50,11 @@ export interface UseMaskEditorProps {
    */
   onMaskChange?: (mask: string) => void;
   /**
+   * Pre-load an existing mask as base64 data URL.
+   * Useful for continuing editing from a previously saved state.
+   */
+  initialMask?: string;
+  /**
    * Current zoom scale (default: 1)
    */
   scale?: number;
@@ -168,6 +173,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     onUndoRequest,
     onRedoRequest,
     onMaskChange,
+    initialMask,
     scale: initialScale = MaskEditorDefaults.scale,
     minScale = MaskEditorDefaults.minScale,
     maxScale = MaskEditorDefaults.maxScale,
@@ -361,6 +367,45 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       );
     }
   }, [cursorCanvasRef, cursorContext]);
+
+  // Load initial mask if provided
+  React.useEffect(() => {
+    if (!initialMask || !maskContext || size.x === 0 || size.y === 0) return;
+
+    const loadInitialMask = async () => {
+      try {
+        const img = new window.Image();
+        img.crossOrigin = 'anonymous';
+
+        img.onload = () => {
+          if (maskContext && maskCanvasRef.current) {
+            // Clear the mask canvas first
+            maskContext.clearRect(0, 0, size.x, size.y);
+            maskContext.fillStyle = '#ffffff';
+            maskContext.fillRect(0, 0, size.x, size.y);
+
+            // Draw the initial mask image onto the mask canvas
+            maskContext.drawImage(img, 0, 0, size.x, size.y);
+
+            // Save to history after loading
+            setTimeout(() => {
+              historyManager.saveToHistory();
+            }, 0);
+          }
+        };
+
+        img.onerror = () => {
+          console.error('[MaskEditor] Failed to load initial mask');
+        };
+
+        img.src = initialMask;
+      } catch (error) {
+        console.error('[MaskEditor] Error loading initial mask:', error);
+      }
+    };
+
+    loadInitialMask();
+  }, [initialMask, maskContext, size, historyManager]);
 
   // Function to prepare and apply image size with enhanced error handling and diagnostics
   const prepareAndApplyImage = React.useCallback(

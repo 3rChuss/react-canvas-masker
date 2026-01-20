@@ -29,6 +29,11 @@ export interface UseMaskEditorProps {
      */
     onMaskChange?: (mask: string) => void;
     /**
+     * Pre-load an existing mask as base64 data URL.
+     * Useful for continuing editing from a previously saved state.
+     */
+    initialMask?: string;
+    /**
      * Current zoom scale (default: 1)
      */
     scale?: number;

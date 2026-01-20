@@ -6,4 +6,5 @@ type Story = StoryObj<typeof MaskEditor>;
 export declare const BareEditorStory: Story;
 export declare const CatEditorStory: Story;
 export declare const HookUsageStory: Story;
+export declare const PreLoadMaskStory: Story;
 //# sourceMappingURL=maskEditor.stories.d.ts.map
