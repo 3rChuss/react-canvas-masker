@@ -103,6 +103,8 @@ export interface UseMaskEditorReturn {
   cursorSize: number;
   handleMouseDown: (e: React.MouseEvent<HTMLCanvasElement>) => void;
   handleMouseUp: (e: React.MouseEvent<HTMLCanvasElement>) => void;
+  handleTouchStart: (e: React.TouchEvent<HTMLCanvasElement>) => void;
+  handleTouchEnd: (e: React.TouchEvent<HTMLCanvasElement>) => void;
   history: HistoryState[];
   historyIndex: number;
   isDrawing: boolean;
@@ -237,12 +239,12 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
 
   // Cursor and mask drawing
   React.useEffect(() => {
-    const listener = (evt: MouseEvent) => {
+    const listener = (evt: MouseEvent | TouchEvent) => {
       if (!containerRef.current || zoomPanState.isPanning) return; // Skip drawing if panning
 
       const { x: imageX, y: imageY } = zoomPanActions.getImageCoordinates(
-        evt.clientX,
-        evt.clientY,
+        evt instanceof MouseEvent ? (evt as MouseEvent).clientX : (evt as TouchEvent).touches[0].clientX,
+        evt instanceof MouseEvent ? (evt as MouseEvent).clientY : (evt as TouchEvent).touches[0].clientY,
       );
 
       if (cursorContext) {
@@ -258,17 +260,35 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
       }
 
       // Only draw if not panning and mouse button is pressed
-      if (
-        maskContext &&
-        evt.buttons > 0 &&
-        !zoomPanState.isPanning &&
-        !zoomPanState.isSpaceKeyDown
-      ) {
-        maskContext.beginPath();
-        maskContext.fillStyle =
-          evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
-        maskContext.arc(imageX, imageY, currentCursorSize, 0, Math.PI * 2);
-        maskContext.fill();
+      if(evt instanceof MouseEvent) {
+        if (
+          maskContext &&
+          evt.buttons > 0 &&
+          !zoomPanState.isPanning &&
+          !zoomPanState.isSpaceKeyDown
+        ) {
+          maskContext.beginPath();
+          maskContext.fillStyle =
+            evt.buttons > 1 || evt.shiftKey ? '#ffffff' : maskColor;
+          maskContext.arc(imageX, imageY, currentCursorSize, 0, Math.PI * 2);
+          maskContext.fill();
+        }
+      }
+
+      if(evt instanceof TouchEvent) {
+        evt.preventDefault()
+        if (
+          maskContext &&
+          (evt.touches.length === 1) &&
+          !zoomPanState.isPanning &&
+          !zoomPanState.isSpaceKeyDown
+        ) {
+          maskContext.beginPath();
+          maskContext.fillStyle =
+            (evt.touches.length > 1) || evt.shiftKey ? '#ffffff' : maskColor;
+          maskContext.arc(imageX, imageY, currentCursorSize, 0, Math.PI * 2);
+          maskContext.fill();
+        }
       }
     };
 
@@ -310,6 +330,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     const cursorCanvas = cursorCanvasRef.current;
     if (cursorCanvas) {
       cursorCanvas.addEventListener('mousemove', listener);
+      cursorCanvas.addEventListener('touchmove', listener);
       if (onCursorSizeChange) {
         cursorCanvas.addEventListener('wheel', scrollListener, {
           passive: false,
@@ -320,6 +341,7 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     return () => {
       if (cursorCanvas) {
         cursorCanvas.removeEventListener('mousemove', listener);
+        cursorCanvas.removeEventListener('touchmove', listener);
         if (onCursorSizeChange) {
           cursorCanvas.removeEventListener('wheel', scrollListener);
         }
@@ -726,6 +748,49 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     [historyManager, onMaskChange, maskCanvasRef],
   );
 
+  const handleTouchStart = React.useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      // Don't start drawing if we're in panning mode
+      if (zoomPanState.isPanning || zoomPanState.isSpaceKeyDown) return;
+
+      // Get the transformed coordinates
+      const { x, y } = zoomPanActions.getImageCoordinates(
+        e.nativeEvent.touches[0].clientX,
+        e.nativeEvent.touches[0].clientY,
+      );
+
+      if (maskContext) {
+        maskContext.beginPath();
+        maskContext.fillStyle =
+          e.touches.length > 1 || e.shiftKey ? '#ffffff' : maskColor;
+        maskContext.arc(x, y, currentCursorSize, 0, Math.PI * 2);
+        maskContext.fill();
+      }
+
+      setIsDrawing(true);
+    },
+    [zoomPanActions, zoomPanState, maskContext, currentCursorSize, maskColor],
+  )
+
+  const handleTouchEnd = React.useCallback(
+    (e: React.TouchEvent<HTMLCanvasElement>) => {
+      if(e.cancelable) {
+        e.preventDefault();
+      }
+      if (zoomPanState.isPanning || zoomPanState.isSpaceKeyDown) return;
+
+      setIsDrawing(false);
+      setTimeout(() => {
+        historyManager.saveToHistory();
+        // Call onMaskChange immediately on mouse up
+        if (onMaskChange && maskCanvasRef.current) {
+          onMaskChange(toMask(maskCanvasRef.current));
+        }
+      }, 0);
+    },
+    [historyManager, onMaskChange, maskCanvasRef],
+  )
+
   React.useEffect(() => {
     onDrawingChange(isDrawing);
   }, [isDrawing, onDrawingChange]);
@@ -811,6 +876,8 @@ export function useMaskEditor(props: UseMaskEditorProps): UseMaskEditorReturn {
     effectiveScale: zoomPanState.effectiveScale,
     handleMouseDown,
     handleMouseUp,
+    handleTouchStart,
+    handleTouchEnd,
     history: historyManager.history,
     historyIndex: historyManager.historyIndex,
     isDrawing,
