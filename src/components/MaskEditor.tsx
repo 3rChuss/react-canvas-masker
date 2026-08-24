@@ -25,6 +25,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
     cursorCanvasRef,
     handleMouseDown,
     handleMouseUp,
+    handleTouchStart,
+    handleTouchEnd,
     key,
     maskBlendMode,
     maskCanvasRef,
@@ -177,6 +179,8 @@ export const MaskEditor: React.FC<MaskEditorProps> = (props) => {
               height={size.y}
               onMouseUp={handleMouseUp}
               onMouseDown={handleMouseDown}
+              onTouchStart={handleTouchStart}
+              onTouchEnd={handleTouchEnd}
               style={{
                 width: size.x,
                 height: size.y,
